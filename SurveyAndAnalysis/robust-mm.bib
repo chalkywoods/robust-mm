@@ -1,0 +1,256 @@
+@InProceedings{BiGAN,
+  author="Chen, Micka{\"e}l
+  and Denoyer, Ludovic",
+  editor="Ceci, Michelangelo
+  and Hollm{\'e}n, Jaakko
+  and Todorovski, Ljup{\v{c}}o
+  and Vens, Celine
+  and D{\v{z}}eroski, Sa{\v{s}}o",
+  title="Multi-view Generative Adversarial Networks",
+  booktitle="Machine Learning and Knowledge Discovery in Databases",
+  year="2017",
+  publisher="Springer International Publishing",
+  address="Cham",
+  pages="175--188",
+  abstract="Learning over multi-view data is a challenging problem with strong practical applications. Most related studies focus on the classification point of view and assume that all the views are available at any time. We consider an extension of this framework in two directions. First, based on the BiGAN model, the Multi-view BiGAN (MV-BiGAN) is able to perform density estimation from multi-view inputs. Second, it can deal with missing views and is able to update its prediction when additional views are provided. We illustrate these properties on a set of experiments over different datasets.",
+  isbn="978-3-319-71246-8"
+}
+
+@article{MMFit,
+  Abstract = {Fitness tracking devices have risen in popularity in recent years, but limitations in terms of their accuracy and failure to track many common exercises presents a need for improved fitness tracking solutions. This work proposes a multimodal deep learning approach to leverage multiple data sources for robust and accurate activity segmentation, exercise recognition and repetition counting. For this, we introduce the MM-Fit dataset; a substantial collection of inertial sensor data from smartphones, smartwatches and earbuds worn by participants while performing full-body workouts, and time-synchronised multi-viewpoint RGB-D video, with 2D and 3D pose estimates. We establish a strong baseline for activity segmentation and exercise recognition on the MM-Fit dataset, and demonstrate the effectiveness of our CNN-based architecture at extracting modality-specific spatial temporal features from inertial sensor and skeleton sequence data. We compare the performance of unimodal and multimodal models for activity recognition across a number of sensing devices and modalities. Furthermore, we demonstrate the effectiveness of multimodal deep learning at learning cross-modal representations for activity recognition, which achieves 96% accuracy across all sensing modalities on unseen subjects in the MM-Fit dataset; 94% using data from the smartwatch only; 85% from the smartphone only; and 82% on data from the earbud device. We strengthen single-device performance by using the zeroing-out training strategy, which phases out the other sensing modalities. Finally, we implement and evaluate a strong repetition counting baseline on our MM-Fit dataset. Collectively, these tasks contribute to recognising, segmenting and timing exercise and non-exercise activities for automatic exercise logging.},
+  Author = {David Strömbäck and Sangxia Huang and Valentin Radu},
+  Journal = {Proc. ACM Interact. Mob. Wearable Ubiquitous Technol.},
+  Month = {December},
+  Number = {4},
+  Numpages = {22},
+  Title = {MM-Fit: Multimodal Deep Learning for Automatic Exercise Logging across Sensing Devices},
+  Volume = {4},
+  Url = {https://doi.org/10.1145/3432701},
+  Year = {2020}}
+
+@article{RaduMultimodal,
+  issn = {2474-9567},
+  abstract = {Wearables and mobile devices see the world through the lens of half a dozen low-power sensors, such as, barometers, accelerometers, microphones and proximity detectors. But differences between sensors ranging from sampling rates, discrete and continuous data or even the data type itself make principled approaches to integrating these streams challenging. How, for example, is barometric pressure best combined with an audio sample to infer if a user is in a car, plane or bike? Critically for applications, how successfully sensor devices are able to maximize the information contained across these multi-modal sensor streams often dictates the fidelity at which they can track user behaviors and context changes. This paper studies the benefits of adopting deep learning algorithms for interpreting user activity and context as captured by multi-sensor systems. Specifically, we focus on four variations of deep neural networks that are based either on fully-connected Deep Neural Networks (DNNs) or Convolutional Neural Networks (CNNs). Two of these architectures follow conventional deep models by performing feature representation learning from a concatenation of sensor types. This classic approach is contrasted with a promising deep model variant characterized by modality-specific partitions of the architecture to maximize intra-modality learning. Our exploration represents the first time these architectures have been evaluated for multimodal deep learning under wearable data -- and for convolutional layers within this architecture, it represents a novel architecture entirely. Experiments show these generic multimodal neural network models compete well with a rich variety of conventional hand-designed shallow methods (including feature extraction and classifier construction) and task-specific modeling pipelines, across a wide-range of sensor types and inference tasks (four different datasets). Although the training and inference overhead of these multimodal deep approaches is in some cases appreciable, we also demonstrate the feasibility of on-device mobile and wearable execution is not a barrier to adoption. This study is carefully constructed to focus on multimodal aspects of wearable data modeling for deep learning by providing a wide range of empirical observations, which we expect to have considerable value in the community. We summarize our observations into a series of practitioner rules-of-thumb and lessons learned that can guide the usage of multimodal deep learning for activity and context detection.},
+  journal = {Proceedings of ACM on interactive, mobile, wearable and ubiquitous technologies},
+  pages = {1--27},
+  volume = {1},
+  publisher = {ACM},
+  number = {4},
+  year = {2018},
+  title = {Multimodal Deep Learning for Activity and Context Recognition},
+  language = {eng},
+  author = {Radu, Valentin and Tong, Catherine and Bhattacharya, Sourav and Lane, Nicholas and Mascolo, Cecilia and Marina, Mahesh and Kawsar, Fahim},
+  keywords = {context detection ; deep learning ; Mobile sensing ; sensor fusion ; multi-modal ; deep neural networks ; activity recognition},
+}
+
+@Article{MultimodalLSTM,
+  AUTHOR = {Ordóñez, Francisco Javier and Roggen, Daniel},
+  TITLE = {Deep Convolutional and LSTM Recurrent Neural Networks for Multimodal Wearable Activity Recognition},
+  JOURNAL = {Sensors},
+  VOLUME = {16},
+  YEAR = {2016},
+  NUMBER = {1},
+  ARTICLE-NUMBER = {115},
+  URL = {https://www.mdpi.com/1424-8220/16/1/115},
+  PubMedID = {26797612},
+  ISSN = {1424-8220},
+  ABSTRACT = {Human activity recognition (HAR) tasks have traditionally been solved using engineered features obtained by heuristic processes. Current research suggests that deep convolutional neural networks are suited to automate feature extraction from raw sensor inputs. However, human activities are made of complex sequences of motor movements, and capturing this temporal dynamics is fundamental for successful HAR. Based on the recent success of recurrent neural networks for time series domains, we propose a generic deep framework for activity recognition based on convolutional and LSTM recurrent units, which: (i) is suitable for multimodal wearable sensors; (ii) can perform sensor fusion naturally; (iii) does not require expert knowledge in designing features; and (iv) explicitly models the temporal dynamics of feature activations. We evaluate our framework on two datasets, one of which has been used in a public activity recognition challenge. Our results show that our framework outperforms competing deep non-recurrent networks on the challenge dataset by 4% on average; outperforming some of the previous reported results by up to 9%. Our results show that the framework can be applied to homogeneous sensor modalities, but can also fuse multimodal sensors to improve performance. We characterise key architectural hyperparameters’ influence on performance to provide insights about their optimisation.},
+  DOI = {10.3390/s16010115}
+}
+
+@article{DBM,
+  title={Multimodal learning with deep boltzmann machines},
+  author={Srivastava, Nitish and Salakhutdinov, Ruslan},
+  journal={The Journal of Machine Learning Research},
+  volume={15},
+  number={1},
+  pages={2949--2980},
+  year={2014},
+  publisher={JMLR. org}
+}
+
+@inproceedings{CRA,
+  title={Missing modalities imputation via cascaded residual autoencoder},
+  author={Tran, Luan and Liu, Xiaoming and Zhou, Jiayu and Jin, Rong},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  pages={1405--1414},
+  year={2017}
+}
+
+@article{GANFootprint,
+  author    = {Benjamin Bischke and
+               Patrick Helber and
+               Florian K{\"{o}}nig and
+               Damian Borth and
+               Andreas Dengel},
+  title     = {Overcoming Missing and Incomplete Modalities with Generative Adversarial
+               Networks for Building Footprint Segmentation},
+  journal   = {CoRR},
+  volume    = {abs/1808.03195},
+  year      = {2018},
+  url       = {http://arxiv.org/abs/1808.03195},
+  archivePrefix = {arXiv},
+  eprint    = {1808.03195},
+  timestamp = {Fri, 13 Sep 2019 15:47:17 +0200},
+  biburl    = {https://dblp.org/rec/journals/corr/abs-1808-03195.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@article{MultisetCCA,
+  title={Multimodal representation learning using deep multiset canonical correlation},
+  author={Somandepalli, Krishna and Kumar, Naveen and Travadi, Ruchir and Narayanan, Shrikanth},
+  journal={arXiv preprint arXiv:1904.01775},
+  year={2019}
+}
+
+@article{ModDrop,
+  title={Moddrop: adaptive multi-modal gesture recognition},
+  author={Neverova, Natalia and Wolf, Christian and Taylor, Graham and Nebout, Florian},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume={38},
+  number={8},
+  pages={1692--1706},
+  year={2015},
+  publisher={IEEE}
+}
+
+@inproceedings{DCCA,
+  title={Deep canonical correlation analysis},
+  author={Andrew, Galen and Arora, Raman and Bilmes, Jeff and Livescu, Karen},
+  booktitle={International conference on machine learning},
+  pages={1247--1255},
+  year={2013},
+  organization={PMLR}
+}
+
+@article{DGCCA,
+  title={Deep generalized canonical correlation analysis},
+  author={Benton, Adrian and Khayrallah, Huda and Gujral, Biman and Reisinger, Dee Ann and Zhang, Sheng and Arora, Raman},
+  journal={arXiv preprint arXiv:1702.02519},
+  year={2017}
+}
+
+@article{DeepConvLSTM,
+  title={Deep convolutional and lstm recurrent neural networks for multimodal wearable activity recognition},
+  author={Ord{\'o}{\~n}ez, Francisco Javier and Roggen, Daniel},
+  journal={Sensors},
+  volume={16},
+  number={1},
+  pages={115},
+  year={2016},
+  publisher={Multidisciplinary Digital Publishing Institute}
+}
+
+@article{LSTM,
+  title={Long short-term memory},
+  author={Hochreiter, Sepp and Schmidhuber, J{\"u}rgen},
+  journal={Neural computation},
+  volume={9},
+  number={8},
+  pages={1735--1780},
+  year={1997},
+  publisher={MIT Press}
+}
+
+@incollection{Neocognitron,
+  title={Neocognitron: A self-organizing neural network model for a mechanism of visual pattern recognition},
+  author={Fukushima, Kunihiko and Miyake, Sei},
+  booktitle={Competition and cooperation in neural nets},
+  pages={267--285},
+  year={1982},
+  publisher={Springer}
+}
+
+@inproceedings{snapdragon,
+  title={From smart to deep: Robust activity recognition on smartwatches using deep learning},
+  author={Bhattacharya, Sourav and Lane, Nicholas D},
+  booktitle={2016 IEEE International Conference on Pervasive Computing and Communication Workshops (PerCom Workshops)},
+  pages={1--6},
+  year={2016},
+  organization={IEEE}
+}
+
+@inproceedings{CNNwatch,
+  title={Computational Offloading of Convolutional Neural Network on a Smart Watch},
+  author={Zualkernan, Imran A and Towheed, Mohammed},
+  booktitle={2020 International Conference on Artificial Intelligence in Information and Communication (ICAIIC)},
+  pages={203--207},
+  year={2020},
+  organization={IEEE}
+}
+
+@misc{GAN,
+  title={Generative Adversarial Networks}, 
+  author={Ian J. Goodfellow and Jean Pouget-Abadie and Mehdi Mirza and Bing Xu and David Warde-Farley and Sherjil Ozair and Aaron Courville and Yoshua Bengio},
+  year={2014},
+  eprint={1406.2661},
+  archivePrefix={arXiv},
+  primaryClass={stat.ML}
+}
+
+@inproceedings{SVMmultimodal,
+  title={News video classification using SVM-based multimodal classifiers and combination strategies},
+  author={Lin, Wei-Hao and Hauptmann, Alexander},
+  booktitle={Proceedings of the tenth ACM international conference on Multimedia},
+  pages={323--326},
+  year={2002}
+}
+
+@article{FederatedLearning,
+  title={Advances and open problems in federated learning},
+  author={Kairouz, Peter and McMahan, H Brendan and Avent, Brendan and Bellet, Aur{\'e}lien and Bennis, Mehdi and Bhagoji, Arjun Nitin and Bonawitz, Keith and Charles, Zachary and Cormode, Graham and Cummings, Rachel and others},
+  journal={arXiv preprint arXiv:1912.04977},
+  year={2019}
+}
+
+@inproceedings{Multiview,
+  title={On deep multi-view representation learning},
+  author={Wang, Weiran and Arora, Raman and Livescu, Karen and Bilmes, Jeff},
+  booktitle={International conference on machine learning},
+  pages={1083--1092},
+  year={2015}
+}
+
+@inproceedings{DeepMM,
+  title={Multimodal deep learning},
+  author={Ngiam, Jiquan and Khosla, Aditya and Kim, Mingyu and Nam, Juhan and Lee, Honglak and Ng, Andrew Y},
+  booktitle={ICML},
+  year={2011}
+}
+
+@article{dropout,
+  title={Dropout: a simple way to prevent neural networks from overfitting},
+  author={Srivastava, Nitish and Hinton, Geoffrey and Krizhevsky, Alex and Sutskever, Ilya and Salakhutdinov, Ruslan},
+  journal={The journal of machine learning research},
+  volume={15},
+  number={1},
+  pages={1929--1958},
+  year={2014},
+  publisher={JMLR. org}
+}
+
+@article{CCA,
+  title={Relations Between Two Sets of Variates},
+  author={Hotelling, Harold},
+  journal={Biometrika},
+  volume={28},
+  number={3/4},
+  pages={321--377},
+  year={1936},
+  publisher={JSTOR}
+}
+
+@article{Reference3,
+  Abstract = {Operating a laser diode in an extended cavity which provides frequency-selective feedback is a very effective method of reducing the laser's linewidth and improving its tunability. We have developed an extremely simple laser of this type, built from inexpensive commercial components with only a few minor modifications. A 780~nm laser built to this design has an output power of 80~mW, a linewidth of 350~kHz, and it has been continuously locked to a Doppler-free rubidium transition for several days.},
+  Author = {A. S. Arnold and J. S. Wilson and M. G. Boshier},
+  Journal = {Review of Scientific Instruments},
+  Month = {March},
+  Number = {3},
+  Numpages = {4},
+  Pages = {1236--1239},
+  Title = {A Simple Extended-Cavity Diode Laser},
+  Volume = {69},
+  Url = {http://link.aip.org/link/?RSI/69/1236/1},
+  Year = {1998}
+}
+
