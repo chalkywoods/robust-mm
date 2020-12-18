@@ -1,0 +1,21 @@
+\chapter{Background}
+
+Machine learning has been used over a wide range of tasks including computer vision, recommendation, medical diagnosis and human activity recognition. Shallow methods such as Random Forest and Support Vector Machines have been superseded by deep learning techniques as computational power availability has increased. Various additions to the basic feedforward neural network have been made to better take advantage of spatial and temporal relationships between features in data sources such as images, audio and video streams, and real time sensor data.
+
+A Convolutional Neural Network (CNN) \cite{Neocognitron} uses convolutional layers to identify spatial or temporal features. Each layer learns a number of kernels with small receptive field which are convolved over the input to produce an activation map. Kernels represent features in the input, e.g a 2D kernel in an image could represent a vertical line, with its activation map showing the location of all vertical lines in the image. Stacking multiple convolutional layers identifies more complex, larger scale spacial features in the input in the same way as the human eye. CNNs can also identify temporal features by stacking sequential frames of data and applying kernels over the temporal dimension.
+State of the art image classifiers have achieved high accuracy on general image recognition datasets such as ImageNet [cite]. One drawback of CNNs is the relatively large storage and computational requirements needed to use them during both training and inference.
+
+Another method of identifying temporal features is with a Recurrent Neural Network (RNN). Recurrent layers contain cells which receive their output from the previous forward pass as an additional input. This allows information to flow through the network temporally, and features can be identified over multiple time steps.
+An extension of this, as used in \cite{DeepConvLSTM}, is the Long Short Term Memory unit (LSTM) \cite{LSTM}. 
+An LSTM consists of the cell itself and input, forget and output gates, controlling flow of information. These gates allow values into the cell, to remain in the cell, and to flow out of the cell via the activation function, respectively. Although basic recurrent cells can theoretically learn features over arbitrary timescales, finite-precision arithmetic used in computation makes identifying long term features difficult during training. LSTM cells do not suffer from the same issues and are therefore better suited to learning over longer timescales.
+
+Machine learning models often use data from a single view, or modality, such as an array of sensors on a single device or the image stream of a video. However, it has been seen that combining data from different modalities can increase accuracy [cite captioning, 2, other mm]. Multimodal learning comes with a number of challenges, including deciding when to fuse data from each modality and dealing with failure in individual modalities.
+
+Depending on when features are fused, elements of a classifier that only require data from one modality could be run on the device collecting that data.
+An advantage of splitting a network into multiple stages is that inference does not all have to take place on a single device.
+
+Experiments \cite{RaduMultimodal,CNNwatch,snapdragon} have shown that todays personal devices such as smartphones and watches can perform inference within reasonable time and power constraints.
+
+A potential security implication of running part or all of a classifier on a second device occurs during data transfer. If raw data or features leaving the device are intercepted they could potentially be used to recover personally identifying information.
+
+Implementations often assume that the multimodal data supplied to the model is complete and clean [cite]. However, in real world conditions data from a particular modality or sensor may be corrupted or completely missing, resulting in inaccurate results from such a classifier.

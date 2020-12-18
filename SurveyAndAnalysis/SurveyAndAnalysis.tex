@@ -10,7 +10,7 @@
 \usepackage[margin=1.2in]{geometry}
 \usepackage{setspace}
 \usepackage[toc,page]{appendix}
-\usepackage[none]{hyphenat} % turn hyphenation off by default
+\usepackage[none]{hyphenat}
 \usepackage{graphicx}
 
 \begin{document}
@@ -19,16 +19,14 @@
 
 \begin{titlepage}
 
-% You need to edit the details here
-
 \begin{center}
 {\LARGE University of Sheffield}\\[1.5cm]
-\linespread{1.2}\huge {\bfseries Project title}\\[1.5cm]
+\linespread{1.2}\huge {\bfseries Robust multimodal training}\\[1.5cm]
 \linespread{1}
 \includegraphics[width=5cm]{images/tuoslogo.png}\\[1cm]
-{\Large Your name}\\[1cm]
-{\large \emph{Supervisor:} Supervisor name}\\[1cm]
-\large A report submitted in fulfilment of the requirements\\ for the degree of MSc in Advanced Computer Science\\[0.3cm] 
+{\Large Harry Woods}\\[1cm]
+{\large \emph{Supervisor:} Valentin Radu}\\[1cm]
+\large A report submitted in fulfilment of the requirements\\ for the degree of BSc in Computer Science\\[0.3cm] 
 \textit{in the}\\[0.3cm]
 Department of Computer Science\\[2cm]
 \today
@@ -36,14 +34,10 @@ Department of Computer Science\\[2cm]
 
 \end{titlepage}
 
-% -------------------------------------------------------------------
-% Declaration
-% -------------------------------------------------------------------
-
 \newpage
 \chapter*{\Large Declaration}
 
-\setstretch{1.1} % set the line spacing differently if you wish, but this looks good to me. 
+\setstretch{1.1}
 
 All sentences or passages quoted in this report from other people's work have been specifically acknowledged by clear cross-referencing to author, work and page(s). Any illustrations that are not the work of the author of this report have been used with the explicit permission of the originator and are specifically acknowledged. I understand that failure to do this amounts to plagiarism and will be considered grounds for failure in this project and the degree examination as a whole.\\[1cm]
 
@@ -56,36 +50,19 @@ All sentences or passages quoted in this report from other people's work have be
 \noindent Date:\\[1mm]
 \rule[1em]{25em}{0.5pt}
 
-% -------------------------------------------------------------------
-% Abstract
-% -------------------------------------------------------------------
-
 \input{chapters/abstract.tex}
 
-% -------------------------------------------------------------------
-% TOC etc
-% -------------------------------------------------------------------
-
 \tableofcontents
-\listoffigures
-\listoftables
 
 \setstretch{1.1} 
 
 \mainmatter
 
-\input{chapters/chapter1.tex}
-\input{chapters/chapter2.tex}
-\input{chapters/chapter3.tex}
-\input{chapters/chapter4.tex}
-\input{chapters/chapter5.tex}
+\input{chapters/background.tex}
+\input{chapters/research.tex}
+\input{chapters/progress&plan.tex}
 
 \bibliographystyle{acm} 
 \bibliography{robust-mm} 
-
-\begin{appendices}
-\input{chapters/appendixA.tex}
-\input{chapters/appendixB.tex}
-\end{appendices}
 
 \end{document}
