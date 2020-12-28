@@ -12,27 +12,18 @@
 \usepackage[toc,page]{appendix}
 \usepackage{graphicx}
 \usepackage{amsbsy}
+\usepackage{titlesec}
+\usepackage{microtype}
+%\usepackage[none]{hyphenat}
+\usepackage[UKenglish]{babel}
+
+\titleformat{\chapter}{\normalfont\bfseries}{\huge\thechapter}{1em}{\huge}
 
 \begin{document}
 
 \frontmatter
 
-\begin{titlepage}
-
-\begin{center}
-{\LARGE University of Sheffield}\\[1.5cm]
-\linespread{1.2}\huge {\bfseries Robust multimodal training}\\[1.5cm]
-\linespread{1}
-\includegraphics[width=5cm]{images/tuoslogo.png}\\[1cm]
-{\Large Harry Woods}\\[1cm]
-{\large \emph{Supervisor:} Valentin Radu}\\[1cm]
-\large A report submitted in fulfilment of the requirements\\ for the degree of BSc in Computer Science\\[0.3cm] 
-\textit{in the}\\[0.3cm]
-Department of Computer Science\\[2cm]
-\today
-\end{center}
-
-\end{titlepage}
+\input{chapters/title.tex}
 
 \newpage
 \chapter*{\Large Declaration}
@@ -50,7 +41,7 @@ All sentences or passages quoted in this report from other people's work have be
 \noindent Date:\\[1mm]
 \rule[1em]{25em}{0.5pt}
 
-\input{chapters/abstract.tex}
+%\input{chapters/abstract.tex}
 \input{chapters/introduction.tex}
 
 \tableofcontents
@@ -63,6 +54,7 @@ All sentences or passages quoted in this report from other people's work have be
 \input{chapters/research.tex}
 \input{chapters/analysis.tex}
 
+\renewcommand{\bibname}{References}
 \bibliographystyle{acm} 
 \bibliography{../robust-mm} 
 
