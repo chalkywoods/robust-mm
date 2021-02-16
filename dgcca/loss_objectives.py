@@ -5,7 +5,7 @@ def GCCA_loss(H_list):
     r = 1e-4
     eps = 1e-8
 
-    top_k = 10
+    top_k = 30
 
     AT_list =  []
 

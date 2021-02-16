@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from loss_objectives import GCCA_loss
+from dgcca.loss_objectives import GCCA_loss
 
 class MlpNet(nn.Module):
     def __init__(self, layer_sizes, input_size):

@@ -15,7 +15,7 @@ Adrian Benton
 10/17/2016: added incremental PCA flag for when one has many, many views
 '''
 
-import pickle, gzip, os, sys, time
+import pickle, gzip, os, sys, time, gc
 
 import numpy as np
 import scipy
@@ -150,7 +150,11 @@ class WeightedGCCA:
       self.lbda = lbda
       
       # Unnormalized version of G -> captures covariance between views
-      M_tilde = K_invSqrt.dot( np.bmat( [ np.sqrt(w) * A.dot(T) for w, A, T in zip(self.W, As, Ts_unnorm) ] ) )
+      inner_list = [ np.sqrt(w) * A.dot(T) for w, A, T in zip(self.W, As, Ts_unnorm) ]
+      bmat = np.bmat( inner_list ) 
+      del inner_list
+      gc.collect()
+      M_tilde = K_invSqrt.dot( bmat )
       Q, R = scipy.linalg.qr( M_tilde, mode='economic')
       
       # Ignore right singular vectors
@@ -187,7 +191,7 @@ class WeightedGCCA:
     
     xh = G.T.dot(x)
     H  = x - G.dot(xh)
-    J, W = scipy.linalg.qr(H, overwrite_a=True, mode='full', check_finite=False)
+    J, W = scipy.linalg.qr(H, overwrite_a=True, mode='economic', check_finite=False)
     
     Q = np.bmat( [[np.diag(S), xh], [np.zeros((b,r), dtype=np.float32), W]] )
     
