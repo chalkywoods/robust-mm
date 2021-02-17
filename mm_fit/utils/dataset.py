@@ -66,8 +66,15 @@ class MMFit(Dataset):
                     start_frame_idxs = []
                     start_frame = frame
                     while len(start_frame_idxs) == 0:
-                        start_frame_idxs = np.argwhere(data[:, 0] == start_frame)
+                        start_frame_idxs = np.array(np.argwhere(data[:, 0] == start_frame)).reshape((-1, 1))
                         start_frame += 1
+                    #print(start_frame_idxs.shape)
+                    
+                    #print(type(start_frame_idxs))
+                    #print(start_frame_idxs)
+                    #print(start_frame_idxs[0])
+                    #print(start_frame_idxs[0][0])
+                    #print(start_frame_idxs[0,0])
                     start_frame_idx = start_frame_idxs[0][0]
 
                     end_frame_idx = start_frame_idx + 1

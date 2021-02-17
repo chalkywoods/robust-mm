@@ -8,7 +8,7 @@ from mm_fit.utils.data_transforms import Unit, Resample
 
 def load_data(modalities, data_path, train_ids=[], val_ids=[], test_ids=[], loader=False, 
               batch_size=128, window_stride = 0.2, window_length = 5, 
-              skeleton_sampling_rate = 30, target_sensor_sampling_rate = 50, workers=0):
+              skeleton_sampling_rate = 30, target_sensor_sampling_rate = 50, workers=0, device=None):
 
     # dataset __len__ uses pose_3d dims (workaround)
     if not 'pose_3d' in modalities:
@@ -46,15 +46,15 @@ def load_data(modalities, data_path, train_ids=[], val_ids=[], test_ids=[], load
         if w_id in train_ids:
             train_datasets.append(MMFit(modality_filepaths, label_path, window_length, skeleton_window_length,
                                         sensor_window_length, skeleton_transform=data_transforms['skeleton'],
-                                        sensor_transform=data_transforms['sensor']))
+                                        sensor_transform=data_transforms['sensor'], device=device))
         elif w_id in val_ids:
             val_datasets.append(MMFit(modality_filepaths, label_path, window_length, skeleton_window_length,
                                     sensor_window_length, skeleton_transform=data_transforms['skeleton'],
-                                    sensor_transform=data_transforms['sensor']))
+                                    sensor_transform=data_transforms['sensor'], device=device))
         elif w_id in test_ids:
             test_datasets.append(MMFit(modality_filepaths, label_path, window_length, skeleton_window_length,
                                     sensor_window_length, skeleton_transform=data_transforms['skeleton'],
-                                    sensor_transform=data_transforms['sensor']))
+                                    sensor_transform=data_transforms['sensor'], device=device))
         else:
             raise Exception('Error: Workout {} not assigned to train, test, or val datasets'.format(w_id))
 
