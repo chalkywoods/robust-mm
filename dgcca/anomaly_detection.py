@@ -12,37 +12,40 @@ class CcaAnomalyDetector:
         self.dgcca = dgcca
         self.device = device
 
-    def train(self, data, embedding_dim=None, window=50, stride=False, method='threshold', plot=False):
+    def train(self, clean, corrupt, embedding_dim=None, window=50, stride=False, method='threshold', plot=False, snr=1):
         if method == 'threshold':
-            print('Generating noise...')
-            noise = [torch.tensor(noise_like(modality)) for modality in data]
             print('Getting data embeddings...')
-            data_embedding = [self.dgcca.get_embedding(modality, i) for (i, modality) in enumerate(data)]
+            clean_embedding = [self.dgcca.get_embedding(modality, i) for (i, modality) in enumerate(clean)]
             print('Getting noise embeddings...')
-            noise_embedding = [self.dgcca.get_embedding(modality, i) for (i, modality) in enumerate(noise)]
+            corrupt_embedding = [self.dgcca.get_embedding(modality, i) for (i, modality) in enumerate(corrupt)]
 
             thresholds = np.ones((self.dgcca.modalities, self.dgcca.modalities))
             type_1 = np.zeros((self.dgcca.modalities, self.dgcca.modalities))
             type_2 = np.zeros((self.dgcca.modalities, self.dgcca.modalities))
+            if stride == 'auto':
+                stride = int(clean[0].shape[0]/1000)
+            print('Stride: {}'.format(stride))
             if plot:
-                fig, ax = plt.subplots(nrows=self.dgcca.modalities, ncols=self.dgcca.modalities, sharex=True, figsize=(15,15))
+                fig, ax = plt.subplots(nrows=self.dgcca.modalities, ncols=self.dgcca.modalities, sharex=True, sharey=True, figsize=(15,15))
                 x = np.linspace(-1, 1, 100)
             with tqdm.tqdm(total=(self.dgcca.modalities*(self.dgcca.modalities-1))/2) as pbar_embed:
                 for i in range(self.dgcca.modalities):
                     for j in range(i+1, self.dgcca.modalities):
                         pbar_embed.set_description('Computing ({},{}) threshold'.format(i,j))
-                        true_mean, true_std, _ = dgcca.window_corr(data_embedding[i], data_embedding[j], window, stride=stride)
-                        noise_mean, noise_std, _ = dgcca.window_corr(np.append(data_embedding[i], noise_embedding[i], 0), 
-                                                                    np.append(noise_embedding[j], data_embedding[j], 0), window, stride=stride)
+                        true_mean, true_std, _ = dgcca.window_corr(clean_embedding[i], clean_embedding[j], window, stride=stride)
+                        noise_mean, noise_std, _ = dgcca.window_corr(np.append(clean_embedding[i], corrupt_embedding[i], 0), 
+                                                                    np.append(corrupt_embedding[j], clean_embedding[j], 0), window, stride=stride)
                         intersections = solve(true_mean, noise_mean, true_std, noise_std)
                         thresholds[i,j] = np.max(intersections)
                         thresholds[j,i] = thresholds[i,j]
-                        true_dist = norm()
                         type_1[i,j] = norm.cdf(thresholds[i,j], loc=true_mean, scale=true_std)
                         type_2[i,j] = 1-norm.cdf(thresholds[i,j], loc=noise_mean, scale=noise_std)
                         if plot:
                             ax[i,j].plot(x, norm.pdf(x, true_mean, true_std), c='green')
                             ax[i,j].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
+                            ax[j,i].plot(x, norm.pdf(x, true_mean, true_std), c='green')
+                            ax[j,i].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
+
                         pbar_embed.update(1)
             self.thresholds = thresholds
             self.type_1 = type_1

@@ -74,7 +74,7 @@ def correct_names(modalities):
             model_names.append('sp_acc')
         elif name in ['sp_l_gyr', 'sp_r_gyr']:
             model_names.append('sp_gyr')
-        elif name in['pose_3d']:
+        elif name in ['pose_3d']:
             model_names.append('skel')
         else:
             model_names.append(name)

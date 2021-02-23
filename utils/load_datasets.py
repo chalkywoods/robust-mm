@@ -8,7 +8,7 @@ from torch.utils.data import RandomSampler, ConcatDataset, DataLoader, random_sp
 from mm_fit.utils.dataset import MMFit, SequentialStridedSampler
 from mm_fit.utils.data_transforms import Unit, Resample
 
-def load_data(modalities, data_path, ids, splits=[1], loader=False, 
+def load_data(modalities, data_path, ids, splits=[1], loader=False, samplers=[], 
               batch_size=128, window_stride = 0.2, window_length = 5, 
               skeleton_sampling_rate = 30, target_sensor_sampling_rate = 50, workers=0, device=None):
 
@@ -53,11 +53,14 @@ def load_data(modalities, data_path, ids, splits=[1], loader=False,
     lengths = [int(split*len(dataset)) for split in splits]
     lengths[np.argmax(splits)] += len(dataset) - sum(lengths) # ensure splits add up to dataset size
     print('Dataset splits: {}'.format(str(lengths)))
-    
+
     datasets = random_split(dataset, lengths)
 
     if loader:
-        return [DataLoader(dataset=dataset, batch_size=batch_size,
-                sampler=RandomSampler(dataset), pin_memory=True, num_workers=workers) for dataset in datasets]
+        loaders = []
+        for idx, datset in enumerate(datasets):
+            loaders.append(DataLoader(dataset=dataset, batch_size=batch_size,
+                sampler=samplers[idx](dataset), pin_memory=True, num_workers=workers))
+        return loaders
     else:
         return datasets
