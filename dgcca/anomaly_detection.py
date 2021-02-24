@@ -23,8 +23,7 @@ class CcaAnomalyDetector:
             type_1 = np.zeros((self.dgcca.modalities, self.dgcca.modalities))
             type_2 = np.zeros((self.dgcca.modalities, self.dgcca.modalities))
             if stride == 'auto':
-                stride = int(clean[0].shape[0]/1000)
-            print('Stride: {}'.format(stride))
+                stride = int(clean[0].shape[0]/5000)
             if plot:
                 fig, ax = plt.subplots(nrows=self.dgcca.modalities, ncols=self.dgcca.modalities, sharex=True, sharey=True, figsize=(15,15))
                 x = np.linspace(-1, 1, 100)

@@ -58,7 +58,7 @@ def load_data(modalities, data_path, ids, splits=[1], loader=False, samplers=[],
 
     if loader:
         loaders = []
-        for idx, datset in enumerate(datasets):
+        for idx, dataset in enumerate(datasets):
             loaders.append(DataLoader(dataset=dataset, batch_size=batch_size,
                 sampler=samplers[idx](dataset), pin_memory=True, num_workers=workers))
         return loaders
