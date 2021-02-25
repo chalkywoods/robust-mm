@@ -34,9 +34,9 @@ class CcaAnomalyDetector:
                         true_mean, true_std, _ = dgcca.window_corr(clean_embedding[i], clean_embedding[j], window, stride=stride)
                         noise_mean, noise_std, _ = dgcca.window_corr(np.append(clean_embedding[i], corrupt_embedding[i], 0), 
                                                                     np.append(corrupt_embedding[j], clean_embedding[j], 0), window, stride=stride)
-                        intersections = solve(true_mean, noise_mean, true_std, noise_std)
-                        thresholds[i,j] = np.max(intersections)
-                        thresholds[j,i] = thresholds[i,j]
+                        threshold = get_thresh(true_mean, noise_mean, true_std, noise_std)
+                        thresholds[i,j] = threshold
+                        thresholds[j,i] = threshold
                         type_1[i,j] = norm.cdf(thresholds[i,j], loc=true_mean, scale=true_std)
                         type_2[i,j] = 1-norm.cdf(thresholds[i,j], loc=noise_mean, scale=noise_std)
                         if plot:
@@ -67,6 +67,13 @@ def noise_like(data):
     mean = data.mean().item()
     std = data.std().item()
     return np.random.default_rng().normal(mean, std, data.shape)
+
+def get_thresh(mtrue, mfalse, stdtrue, stdfalse):
+    roots = solve(mtrue, mfalse, stdtrue, stdfalse)
+    if stdtrue > stdfalse:
+        return np.max(roots)
+    else:
+        return np.min(roots)
 
 def solve(m1,m2,std1,std2):
     a = 1/(2*std1**2) - 1/(2*std2**2)
