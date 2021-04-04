@@ -1,0 +1,49 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MSc Project Background Report Template
+% Prof. Roger K. Moore
+% University of Sheffield
+% 22 March 2017
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\documentclass[11pt,oneside]{book}
+\usepackage[margin=1.2in]{geometry}
+\usepackage{setspace}
+\usepackage[toc,page]{appendix}
+\usepackage{graphicx}
+\usepackage{amsbsy}
+\usepackage{titlesec}
+\usepackage{microtype}
+\usepackage[UKenglish]{babel}
+
+\titleformat{\chapter}{\normalfont\bfseries}{\huge\thechapter}{1em}{\huge}
+
+\begin{document}
+
+\frontmatter
+
+\input{chapters/title.tex}
+\input{chapters/declaration.tex}
+
+\input{chapters/abstract.tex}
+
+\input{chapters/impact.tex}
+\input{chapters/acknowledgements.tex}
+
+\tableofcontents
+
+\setstretch{1.1}
+
+\mainmatter
+
+\input{chapters/introduction.tex}
+\input{chapters/background.tex}
+\input{chapters/research.tex}
+\input{chapters/analysis.tex}
+\input{chapters/detector design.tex}
+
+\renewcommand{\bibname}{References}
+\bibliographystyle{acm} 
+\bibliography{../robust-mm} 
+
+\end{document}

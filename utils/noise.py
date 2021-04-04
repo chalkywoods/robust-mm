@@ -7,7 +7,7 @@ from sklearn.mixture import GaussianMixture
 
 from mm_fit.utils.utils import load_modality
 
-class GMMNoise:
+class GMMNoise_mmfit:
 
     def __init__(self, data_path, modalities, workouts, n_components, params=None, step='auto'):
         self.modalities = modalities
@@ -54,3 +54,59 @@ class GMMNoise:
         if isinstance(data, torch.Tensor):
             noise = torch.Tensor(noise)
         return (noise + snr*data)/(1 + snr)
+
+class GMMNoise:
+    def __init__(self, data, n_components):
+        modalities = []
+        for data, _ in data:
+            with tqdm.tqdm(total=len(data)) as pbar:
+                pbar.set_description('Generating GMM for dataset')
+                for mod in data:
+                    modality = []
+                    for i in range(mod.shape[2]):
+                        row = []
+                        for j in range(mod.shape[3]):
+                            components = min(n_components, len(np.unique(mod[:,0,i,j])))
+                            row.append(GaussianMixture(components).fit(mod[:,0,i,j].reshape((-1,1))))
+                        modality.append(row)
+                    modalities.append(modality)
+                    pbar.update(1)
+                self.models = np.array(modalities)
+    
+    def get_noise(self, shape, modality):
+        samples = []
+        if isinstance(shape, int):
+            noise = []
+            for i in range(self.models.shape[1]):
+                noise.append([model.sample(shape)[0].reshape((-1)) for model in self.models[modality,i,:]])
+            return np.array(noise)
+        else:
+            all_samples = []
+            samples = [model.sample(shape[0]*shape[2])[0] for model in self.models[modality]]
+            samples = np.stack([sample.reshape((shape[0], shape[2])) for sample in samples], axis=1)
+            return samples
+
+    def add_noise(self, data, snr=1, modality=None):
+        modality = range(len(data)) if modality is None else modality # corrupt all by default
+        modalities = []
+        for i in range(len(data)):
+            if i in modality:
+                modalities.append((np.moveaxis(self.get_noise(data[0].shape[0], i), -1, 0).reshape(data[i].shape) + snr*data[i])/(1 + snr))
+            else:
+                modalities.append(data[i])
+        return modalities
+
+def get_gaussian_noise(shape):
+    return np.random.default_rng().normal(0,1,shape)        
+        
+def add_gaussian_noise(data, snr=1, modality=None):
+    modality = range(len(data)) if modality is None else modality
+    modalities = []
+    for i in range(len(data)):
+        if i in modality:
+            print(data[0].shape)
+            modalities.append((np.moveaxis(get_gaussian_noise(data[0].shape), -1, 0).reshape(data[i].shape) + snr*data[i])/(1 + snr))
+        else:
+            modalities.append(data[i])
+    return modalities
+

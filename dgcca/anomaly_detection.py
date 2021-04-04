@@ -31,8 +31,8 @@ class CcaAnomalyDetector:
                 for i in range(self.dgcca.modalities):
                     for j in range(i+1, self.dgcca.modalities):
                         pbar_embed.set_description('Computing ({},{}) threshold'.format(i,j))
-                        true_mean, true_std, _ = dgcca.window_corr(clean_embedding[i], clean_embedding[j], window, stride=stride)
-                        noise_mean, noise_std, _ = dgcca.window_corr(np.append(clean_embedding[i], corrupt_embedding[i], 0), 
+                        true_mean, true_std, true_corrs = dgcca.window_corr(clean_embedding[i], clean_embedding[j], window, stride=stride)
+                        noise_mean, noise_std, noise_corrs = dgcca.window_corr(np.append(clean_embedding[i], corrupt_embedding[i], 0), 
                                                                     np.append(corrupt_embedding[j], clean_embedding[j], 0), window, stride=stride)
                         threshold = get_thresh(true_mean, noise_mean, true_std, noise_std)
                         thresholds[i,j] = threshold
@@ -41,9 +41,13 @@ class CcaAnomalyDetector:
                         type_2[i,j] = 1-norm.cdf(thresholds[i,j], loc=noise_mean, scale=noise_std)
                         if plot:
                             ax[i,j].plot(x, norm.pdf(x, true_mean, true_std), c='green')
+                            ax[i,j].hist(true_corrs, color='green', alpha=0.5, density=True)
                             ax[i,j].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
+                            ax[i,j].hist(noise_corrs, color='red', alpha=0.5, density=True)
                             ax[j,i].plot(x, norm.pdf(x, true_mean, true_std), c='green')
+                            ax[j,i].hist(true_corrs, color='green', alpha=0.5, density=True)
                             ax[j,i].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
+                            ax[j,i].hist(noise_corrs, color='red', alpha=0.5, density=True)
 
                         pbar_embed.update(1)
             self.thresholds = thresholds
@@ -54,14 +58,18 @@ class CcaAnomalyDetector:
                 return fig
             
 
-    def detect_anomalies(self, data, grace=0):
-        return self.classifier(data, grace=grace)
+    def detect_anomalies(self, data, grace=0, evaluating=False):
+        return self.classifier(data, grace=grace, evaluating=evaluating)
 
-    def threshold_classifier(self, data, grace=0):
+    def threshold_classifier(self, data, grace=0, evaluating=False):
         corrs = self.dgcca.get_corrs(data)
         clean = corrs>self.thresholds
         cleanness = clean.sum()/(clean.shape[0]*clean.shape[1]-self.dgcca.modalities)
-        return (clean.sum(axis=0)/(self.dgcca.modalities-1-grace)) >= cleanness
+        pred = (clean.sum(axis=0)/(self.dgcca.modalities-1-grace)) >= cleanness
+        if evaluating:
+            return (pred, clean)
+        else:
+            return pred
 
 def noise_like(data):
     mean = data.mean().item()

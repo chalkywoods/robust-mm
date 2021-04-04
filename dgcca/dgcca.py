@@ -18,14 +18,14 @@ class DGCCA:
     layer_sizes = [layer[1:] + [out_dim] for layer in layers]
     self.model = DeepGCCA(layer_sizes, self.input_shapes, out_dim, use_all_singular_values, device).double().to(device)
 
-  def train(self, data, epochs=100, batch_size=128, lr=1e-2, criterion=GCCA_loss, cca_dim=1, cca_hidden_dim=1000, incremental=False):
+  def train(self, data, epochs=100, batch_size=128, lr=1e-4, criterion=GCCA_loss, cca_dim=1, cca_hidden_dim=1000, incremental=False):
     if not self.checkpoint:
       self.train_reduction(epochs=epochs, data=data, batch_size=batch_size, lr=lr, criterion=criterion)
     self.train_linear_gcca(data, cca_dim, cca_hidden_dim, incremental=incremental)
 
-  def train_reduction(self, epochs=100, data=None, batch_size=128, lr=1e-2, criterion=GCCA_loss):
+  def train_reduction(self, epochs=100, data=None, batch_size=128, lr=1e-4, criterion=GCCA_loss):
     #optimizer = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=0.9, weight_decay=0.5)
-    optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.5, amsgrad=False)
+    optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5, amsgrad=False)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
 
     data = [modality.to(self.device) for modality in data]
@@ -57,8 +57,8 @@ class DGCCA:
           loss.backward()
           optimizer.step()
           pbar_train.update(1)
-          pbar_train.set_description('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, epochs, total_loss_avg))
-          scheduler.step()
+          pbar_train.set_description('Epoch {:3}/{}, Loss: {:.4f}'.format(epoch + 1, epochs, total_loss_avg))
+      scheduler.step()
       random.shuffle(minibatch_indices)
 
   def train_linear_gcca(self, data, cca_dim=1, cca_hidden_dim=1000, batch_size=128, incremental=False):
@@ -131,6 +131,15 @@ class DGCCA:
 
   def save_checkpoint(self, path):
     torch.save(self.model.state_dict(), path)
+
+  def get_all_embeddings(self, data):
+    reduced_data = self.model(data)
+    cca_embeddings = []
+    for modality in range(self.modalities):
+      K = self.get_K(modality, reduced_data[0].shape[0])
+      cca_embeddings.append(self.wgcca.apply([mod.detach().numpy() for mod in reduced_data], K=K))
+    return cca_embeddings
+
 
   def get_embedding(self, data, modality, batch_size=512):
     reduced_data = []

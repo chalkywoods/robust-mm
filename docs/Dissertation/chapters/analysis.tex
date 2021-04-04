@@ -1,0 +1,20 @@
+\chapter{Analysis}
+The challenges involved in dealing with missing and corrupt modalities appear to be quite different. For starters, detection of a missing modality in a system is likely trivial as the data will be nonexistent, or the device missing. Corrupt data will be harder to detect as it will be presented to the model in the same way as a clean sample and these external indicators cannot be relied upon. Likewise, using ModDrop \cite{ModDrop} during training appears to make a model largely robust to missing modalities, but not necessarily on those with corruption.\\
+
+Supposing our model is robust to missing modalities, and possess a reliable method of detecting corruption, we may simply remove any corrupt modalities and allow our model to deal with the gaps. This would limit the effect of inaccurate information from that modality on the output and give the same performance as with missing modalities. However, this method would not be able to take advantage of any useful information that may remain in the corrupt modality.\\
+
+A main focus of this project is therefore to detect any corruption in input modalities, ideally on a per-sample basis.\\
+
+The BBSD method outlined in the previous section works well but requires many samples of data from a shifted distribution, in our case caused by corruption, to be accurate. This could detect longer term causes of corruption, for example a malfunctioning sensor, or any other changes that cause a modality to shift from the training data for a period of time. A key advantage is that it requires only an existing form of dimensionality reduction, which can be trained to best perform the task at hand. However, BBSD would be unable to detect corruption on a per-sample basis which could limit its applications in some environments.\\
+
+CCA and its variants could be used for a novel method of corruption detection. If a CCA model is trained such that clean data samples are always transformed into maximally correlated representations, there is no guarantee that the representation of a corrupted modality will be correlated with them. Assuming this is true, modalities with low correlation can be considered corrupted. A possible advantage of this method over BBSD is that it may be able to detect corruption in single samples.\\
+
+This method could be applied to detect and remove corruption before running the desired model on the remaining data. Alternatively, the representations learned by CCA, once corruption has been removed, could be used as features for inference. This may not perform as well as a purpose built model, but saves the computational cost of carrying out dimensionality reduction twice.\\
+
+More exploration is needed to see if CCA can be used as proposed, for both corruption detection and informative dimensionality reduction, and this will be a major part of this project.\\
+
+An alternative to inference without missing or corrupt modalities is to reconstruct them and use these instead of the missing data. Inference using the reconstruction methods outlined in the previous section have been found to increase accuracy over using missing modalities. It may be possible to incorporate corrupted data into the reconstruction process, allowing it to take advantage of any information that remains.\\
+
+A more elegant solution than detecting corruption could be training the model so that it is robust to it. Further evaluation of ModDrop is necessary to see if it achieves this.\\
+
+To evaluate any of these methods, it is necessary to understand what form corruption can take. \cite{failingloudly} use a variety of techniques to alter the distribution of MNIST but many of the images are quite close to their usual form. \cite{ModDrop} use pepper noise for testing, which could occur in some scenarios, but there are other forms of corruption to be addressed.
