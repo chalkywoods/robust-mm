@@ -1,11 +1,9 @@
 import torch 
 
-def GCCA_loss(H_list):
+def GCCA_loss(H_list, top_k=30):
     
     r = 1e-4
     eps = 1e-8
-
-    top_k = 30
 
     AT_list =  []
 

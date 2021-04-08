@@ -1,5 +1,30 @@
 \chapter{CCA anomaly detection}
 
+We propose a multimodal anomaly detection system based on the correlations between inputs produced by DGCCA.
+
+\section{Canonical Correlation Analysis}
+\subsection{Linear CCA}
+Canonical Correlation Analysis \cite{CCA} is a a generalised way of analysing cross covariance matrices between two random variables. Given two random variables $\mathbf{X}=(X_1,...,X_n | X_i\in\mathbb{R}^{d_X})$ and $\mathbf{Y}=(Y_1,...,Y_n | Y_i\in\mathbb{R}^{d_Y})$, CCA learns transformations $\mathbf{u}_1\in\mathbb{R}^{d_X}$ and $\mathbf{v}_1\in\mathbb{R}^{d_Y}$ such that $$corr(\mathbf{u}_1^T\mathbf{X}, \mathbf{v}_1^T\mathbf{Y}) \textrm{ is maximised.}$$ $(\mathbf{u}_1^T\mathbf{X}, \mathbf{v}_1^T\mathbf{Y})$ are known as the first pair of canonical variables. Further canonical variables maximise correlation orthogonally to the first pair of canonical variables, with the $i^{th}$ pair of canonical variables $(\mathbf{u}_i^T\mathbf{X}, \mathbf{v}_i^T\mathbf{Y})$ maximising $$corr(\mathbf{u}_i^T\mathbf{X}, \mathbf{v}_i^T\mathbf{Y})$$ subject to $$corr(\mathbf{u}_i^T\mathbf{X}, \mathbf{u}_j^T\mathbf{X}) = corr(\mathbf{v}_i^T\mathbf{Y}, \mathbf{v}_j^T\mathbf{Y}) = 0,\thinspace  \forall \thinspace  j<i$$
+
+In practice, CCA is carried out by performing singular value decomposition on the correlation matrix. \\
+
+The transformations learned by CCA give the basis for our anomaly detection system. When two modalities contain clean data of the type encountered during training, we expect their canonical variables to have a high correlation. If a modality contains corrupted data which differs enough from the training distribution, the transformation will not be optimal and we expect the correlation to be lower.\\
+
+As discussed, CCA is limited to maximising correlations between two sets of variates using linear transformations. To use CCA efficiently with many modalities we require a method of learning transformations for more than two sets of variates.
+
+\subsection{Generalised Canonical Correlation Analysis}
+GCCA \cite{GCCA} constructs a shared representation $G$ and maximises the correlations between each set of variates and  the shared representation.
+
+\subsection{Deep Generalised Canonical Correlation Analysis}
+DGCCA builds upon Deep CCA \cite{DCCA} to extend GCCA to learn nonlinear transformations. A neural network is trained for each modality to learn a nonlinear transformation to a new representation which is used for GCCA. The networks are trained by backpropagating the objective of GCCA, maximising the ability of their outputs to be correlated.\\
+
+Benton et al. \cite{DGCCA} derive a loss function for GCCA based on pairwise correlations between modalities.\\
+
+Using DGCCA we can obtain representations of any number of modalities, with the expectation that correlation between any two representations is high.
+
+\section{Corruption detection}
+To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. For each pair of modalities we train a correlation threshold
+
 Modality representation, could be raw or modality specific embedding.\\
 
 DGCCA, use loss function to train CCA heads per modality\\
