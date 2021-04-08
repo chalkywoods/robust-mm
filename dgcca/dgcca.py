@@ -156,7 +156,7 @@ def combined_corr(x, y, weighting=np.mean):
   corrs = []
   for i in range(dim):
       corrs.append(corrmatrix[i,i+dim])
-  return weighting(corrs)
+  return weighting(np.nan_to_num(corrs))
 
 def window_corr(x, y, window, stride=False, weighting=np.mean):
   corrs = []

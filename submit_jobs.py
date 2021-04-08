@@ -10,20 +10,22 @@ def main():
     Create a DRMAA session then submit a job.
     Note, need file called myjob.sh in the current directory.
     """
+    noise_type = 'gmm'
     with drmaa.Session() as s:
         for batch_size in [128]:
             for snr in [0,0.25,0.5,0.75,1,2]:
-                for gmm_components in [1,3,5,7,9]:
+                for gmm_components in [5]:
                     for cca_dim in [15]:
-                        for window_size in [30]:
-                            for grace in [0]:
-                                param_string = 'batch_size: {}, snr: {}, gmm_components: {}, cca_dim: {}, window_size: {}, grace: {}'.format(batch_size, snr, gmm_components, cca_dim, window_size, grace)
-                                #print('Running anomaly detection with {}'.format(param_string))
+                        for window_size in [100]:
+                            for grace in [0,1]:
+                                param_string = 'batch_size: {}, snr: {}, gmm_components: {}, cca_dim: {}, window_size: {}, grace: {}, noise_type: {}'.format(batch_size, snr, gmm_components, cca_dim, window_size, grace, noise_type)
                                 jt = s.createJobTemplate()
 
                                 jt.remoteCommand = os.path.join(os.getcwd(), 'pipeline.sh')
-                                jt.args = [batch_size, snr, gmm_components, cca_dim, window_size, grace]
-                                
+                                jt.args = [batch_size, snr, gmm_components, cca_dim, window_size, grace, noise_type]
+                                jt.nativeSpecification = '-l h_rt=00:30:00 -l rmem=4G'
+                                jt.blockEmail = False
+                                jt.email = ['pipeline@hggwoods.com']
                                 job_id = s.runJob(jt)
                                 print('Job {} submitted with params {}'.format(job_id, param_string))
                                 s.deleteJobTemplate(jt)

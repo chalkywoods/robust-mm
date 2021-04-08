@@ -91,9 +91,10 @@ class GMMNoise:
         modalities = []
         for i in range(len(data)):
             if i in modality:
-                modalities.append((np.moveaxis(self.get_noise(data[0].shape[0], i), -1, 0).reshape(data[i].shape) + snr*data[i])/(1 + snr))
+                noise = torch.as_tensor(np.moveaxis(self.get_noise(data[0].shape[0], i), -1, 0).reshape(data[i].shape), dtype=torch.float)
+                modalities.append((noise + torch.as_tensor(snr*data[i], dtype=torch.float))/(1 + snr))
             else:
-                modalities.append(data[i])
+                modalities.append(torch.as_tensor(data[i], dtype=torch.float))
         return modalities
 
 def get_gaussian_noise(shape):
@@ -104,9 +105,9 @@ def add_gaussian_noise(data, snr=1, modality=None):
     modalities = []
     for i in range(len(data)):
         if i in modality:
-            print(data[0].shape)
-            modalities.append((np.moveaxis(get_gaussian_noise(data[0].shape), -1, 0).reshape(data[i].shape) + snr*data[i])/(1 + snr))
+            noise = torch.as_tensor(np.moveaxis(get_gaussian_noise(data[0].shape), -1, 0).reshape(data[i].shape), dtype=torch.float)
+            modalities.append((noise + torch.as_tensor(snr*data[i], dtype=torch.float))/(1 + snr))
         else:
-            modalities.append(data[i])
+            modalities.append(torch.as_tensor(data[i], dtype=torch.float))
     return modalities
 
