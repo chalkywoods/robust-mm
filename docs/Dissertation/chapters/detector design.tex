@@ -23,7 +23,17 @@ Benton et al. \cite{DGCCA} derive a loss function for GCCA based on pairwise cor
 Using DGCCA we can obtain representations of any number of modalities, with the expectation that correlation between any two representations is high.
 
 \section{Corruption detection}
-To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. For each pair of modalities we train a correlation threshold
+To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. To calculate the correlation between modalities $a$ and $b$ based on $N$ samples with cca dimension $C$, we have canonical variate matrices $A, B \in \mathbb{R}^{N\times C}$ and calculate the combined correlation, the sum of correlations over each canonical variate:
+
+$$CombinedCorr(A, B) = \sum_{d=1}^C{corr((A_{s,d} | s=1..N), (B_{s,d} | s=1..N))}$$
+
+The expectation is that this measure is high when samples are drawn from the training distribution, but low when samples are corrupted and fall outside of it.\\
+
+To detect whether a given pair of modalities is corrupted, we compare their correlation with a threshold learned during training. Combined correlation is calculated between cca embeddings of clean data, as well as between clean and corrupt data. The intensity of corruption used affects the distribution of corrupt correlations, and therefore the learned threshold. We assume the correlations follow a normal distribution, and choose the threshold as the intersection between pdfs of clean and corrupt modalities. For $m$ modalities, we learn $\frac{1}{2}m(m+1)$ thresholds.\\
+
+\todo[inline]{Image of modality corruption from pairwise corruption}
+
+The pairwise corruption detection stage yields an truth matrix $M \in \{true, false\}^{m\times m}$, where $M_{i,j}$ is true if both modalities are clean, and false if one or both modalities are corrupted. We expect that when modality $i$ is corrupted, all entries of the ith row and column are false. The remaining modalities are true for all entries except that of the corrupted modality. Notably, the proportion of corrupt pairs in the row of a corrupt modality is greater than the overall proportion of corrupted pairs, whilst the proportion of corrupt pairs in the row of a clean modality is lower than this value. By comparing each row against this value, we can detect up to $m-2$ corrupt modalities.\\
 
 Modality representation, could be raw or modality specific embedding.\\
 
