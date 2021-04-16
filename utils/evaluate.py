@@ -79,8 +79,11 @@ def eval_ad(classifier, data, detector, noise, num_corrupt=0, window=20, grace=0
                      [tp_ind, tn_ind, fp_ind, fn_ind]])
 
 
-def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=20, grace=0):
+def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=20, grace=0, round_func=np.round):
     classifier.eval()
+    detector.grace=grace
+    detector.round_func=round_func
+
     tp_pred, tn_pred, fp_pred, fn_pred, tp_ind, tn_ind, fp_ind, fn_ind = (0,0,0,0,0,0,0,0)
     correct_raw = 0
     correct_cleaned = 0
@@ -94,8 +97,7 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
             corrupt_data = [torch.FloatTensor(mod) for mod in corrupt_data]
 
             embedding = classifier(corrupt_data, heads=True)
-
-            pred, individual = detector.detect_anomalies([mod.double() for mod in embedding], grace=grace, evaluating=True)
+            pred, individual = detector.detect_anomalies([mod.double() for mod in embedding], evaluating=True)
 
             for j in range(0,4):
                 for k in range(j+1,4):
@@ -121,7 +123,7 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
                 if np.argmax(raw_pred[sample]) == labels[i+sample]:
                     correct_raw += 1
 
-            # Accuracy for perfectly cleaned data (ground truth)
+            # Accuracy for perfectly cleaned data (labels)
             cleaned_data = embedding
             for mod in corrupt:
                 cleaned_data[mod] = torch.zeros_like(cleaned_data[mod])
@@ -148,8 +150,9 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
     return (np.array([[tp_pred, tn_pred, fp_pred, fn_pred],
                      [tp_ind, tn_ind, fp_ind, fn_ind]]), correct_raw/(i+window), correct_cleaned/(i+window), correct_ad_cleaned/(i+window))
 
-def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_components, window_size, grace, cca_path, noise_gen=None, noise_type='gmm'):
+def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_components, window_size, grace, cca_path, noise_gen=None, noise_type='gmm', thresh_method='intersection', corruption_classifier='proportional', train_snr=None, round_func=np.round):
     classifier.eval()
+    train_snr = snr if train_snr is None else train_snr
     cca = dgcca.dgcca.DGCCA([[512, 125, 64]]*4, 32, device='cpu', use_all_singular_values=False)
     cca.load_checkpoint(cca_path)
     train_cca_embeddings = [torch.DoubleTensor(mod) for mod in embed(classifier, train_cca)]
@@ -161,14 +164,14 @@ def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_compone
         noise_gen = utils.noise.GMMNoise(train_ad, gmm_components) # Train GMM for each pixel to generate noise
 
     if noise_type=='gmm':
-        noise = lambda data: noise_gen.add_noise([mod.numpy() for mod in data], snr=snr) # noise and image weighted equally
+        noise = lambda data: noise_gen.add_noise([mod.numpy() for mod in data], snr=train_snr) # noise and image weighted equally
     else:
-        noise = lambda data: utils.noise.add_gaussian_noise(data, snr=snr)
+        noise = lambda data: utils.noise.add_gaussian_noise(data, snr=train_snr)
     
     corrupt = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad, noise)]
 
     detector = dgcca.anomaly_detection.CcaAnomalyDetector(cca)
-    detector.train(clean, corrupt, stride='auto', window=window_size)
+    detector.train(clean, corrupt, stride='auto', window=window_size, method=thresh_method, classifier=corruption_classifier, grace=grace, round_func=round_func)
 
     if noise_type=='gmm':
         test_noise = lambda data, modality: noise_gen.add_noise(data, snr=snr, modality=modality)
@@ -180,6 +183,6 @@ def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_compone
         data = [mod.double() for mod in data]
         for num_corrupt in [0,1,2]:
             results[num_corrupt] = {}
-            results[num_corrupt]['ad'], results[num_corrupt]['raw'], results[num_corrupt]['clean'], results[num_corrupt]['ad_clean'] = eval_both(classifier, data, label, detector, test_noise, num_corrupt, window_size, grace)
+            results[num_corrupt]['ad'], results[num_corrupt]['raw'], results[num_corrupt]['clean'], results[num_corrupt]['ad_clean'] = eval_both(classifier, data, label, detector, test_noise, num_corrupt, window_size)
     
     return results

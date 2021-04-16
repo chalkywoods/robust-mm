@@ -29,11 +29,54 @@ parser.add_argument('--window_size', type=int, default=20,
                     help='Number of samples to consider when detecting corruption in modalities')
 parser.add_argument('--grace', type=int, default=0,
                     help='Number of individual false negatives to ignore when classifying modalities')
-parser.add_argument('--noise_type', type=str, default='gmm',
+parser.add_argument('--noise_type', default='gmm',
                     help='Type of noise, gmm or gaussian')
-parser.add_argument('--data', type=str, default='../data',
+parser.add_argument('--thresh_method', default='intersection',
+                    help='Anomaly detector threshold method to use')
+parser.add_argument('--data', default='../data',
                     help='Number of individual false negatives to ignore when classifying modalities')
+parser.add_argument('--repeat', type=int, default=0,
+                    help='Repeat number')
+parser.add_argument('--seed', type=int, default=-1,
+                    help='RNG seed. -1 for random seed')
+parser.add_argument('--train_snr', type=float, default=-1.0,
+                    help='snr to use for threshold training. -1 for global snr')
+parser.add_argument('--ad_classifier', default='none',
+                    help='function to use for rounding when estimating number of corrupt modalities. round, floor or ceiling, or none for proportional classification')
 args = parser.parse_args()
+if args.train_snr == -1:
+  train_snr = args.snr
+elif args.train_snr < 100:
+  train_snr = args.train_snr
+else:
+  train_snr = 0.65
+print('Using training snr of {}'.format(train_snr))
+
+try:
+  thresh_method = float(args.thresh_method)
+  print('Using hard thresholds of {}'.format(threshold))
+except:
+  thresh_method = args.thresh_method
+  print('Generating thresholds using {}'.format(thresh_method))
+
+corruption_classifier = 'est_corrupt'
+round_func = np.round
+if args.ad_classifier == 'round':
+  round_func = np.round
+elif args.ad_classifier == 'floor':
+  round_func = np.floor
+elif args.ad_classifier == 'ceiling':
+  round_func = np.ceil
+elif args.ad_classifier == 'delta':
+  corruption_classifier = 'delta'
+elif args.ad_classifier == 'prob':
+  corruption_classifier = 'prob'
+else:
+  corruption_classifier = 'proportional'
+
+print('Using {} corruption classifier'.format(corruption_classifier))
+if corruption_classifier == 'est_corrupt':
+  print('    with rounding function {}'.format(args.ad_classifier))
 
 ds_train = utils.mm_mnist.MM_MNIST(args.data, train=True, download=True,
                              transform=torchvision.transforms.Compose([
@@ -64,7 +107,10 @@ classifier = utils.mm_mnist.MM_Classifier(4, (1,14,14), dropout=0.2, moddrop=0.1
 criterion = nn.CrossEntropyLoss()
 classifier.load_state_dict(torch.load('output/mm_mnist_cnn_moddrop.pth'))
 
-results = utils.evaluate.pipeline(classifier, dl_train_cca, dl_train_ad, dl_test_ad, cca_dim=args.cca_dim, snr=args.snr, gmm_components=args.gmm_components, window_size=args.window_size, grace=args.grace, cca_path='output/mm_mnist_cca_cnn_moddrop.pth', noise_type=args.noise_type)
+results = utils.evaluate.pipeline(classifier, dl_train_cca, dl_train_ad, dl_test_ad, cca_dim=args.cca_dim, 
+                                  snr=args.snr, gmm_components=args.gmm_components, window_size=args.window_size, 
+                                  grace=args.grace, cca_path='output/mm_mnist_cca_cnn_moddrop.pth', noise_type=args.noise_type, 
+                                  thresh_method=thresh_method, train_snr=train_snr, round_func=round_func, corruption_classifier=corruption_classifier)
 
-with open('output/cnn_moddrop_{}_{}_{}_{}_{}_{}_{}.pkl'.format(args.batch_size, args.snr, args.gmm_components, args.cca_dim, args.window_size, args.grace, args.noise_type), 'wb') as f:
+with open('output/cnn_moddrop_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.pkl'.format(args.batch_size, args.snr, args.gmm_components, args.cca_dim, args.window_size, args.grace, args.noise_type, args.thresh_method, args.repeat, train_snr, args.ad_classifier), 'wb') as f:
     pickle.dump(results, f)
