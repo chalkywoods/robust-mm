@@ -1,0 +1,61 @@
+\chapter{Method}
+
+We propose a multimodal anomaly detection system based on the correlations between inputs produced by DGCCA.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/pipeline.png}
+    \caption{Main components of the multimodal classifier and corruption detection pipeline}
+    \label{fig:pipeline}
+\end{figure}
+
+\section{Canonical Correlation Analysis}
+\subsection{Linear CCA}
+Canonical Correlation Analysis \cite{CCA} is a a generalised way of analysing cross covariance matrices between two random variables. Given two random variables $\mathbf{X}=(X_1,...,X_n | X_i\in\mathbb{R}^{d_X})$ and $\mathbf{Y}=(Y_1,...,Y_n | Y_i\in\mathbb{R}^{d_Y})$, CCA learns transformations $\mathbf{u}_1\in\mathbb{R}^{d_X}$ and $\mathbf{v}_1\in\mathbb{R}^{d_Y}$ such that $$corr(\mathbf{u}_1^T\mathbf{X}, \mathbf{v}_1^T\mathbf{Y}) \textrm{ is maximised.}$$ $(\mathbf{u}_1^T\mathbf{X}, \mathbf{v}_1^T\mathbf{Y})$ are known as the first pair of canonical variables. Further canonical variables maximise correlation orthogonally to the first pair of canonical variables, with the $i^{th}$ pair of canonical variables $(\mathbf{u}_i^T\mathbf{X}, \mathbf{v}_i^T\mathbf{Y})$ maximising $$corr(\mathbf{u}_i^T\mathbf{X}, \mathbf{v}_i^T\mathbf{Y})$$ subject to $$cov(\mathbf{u}_i^T\mathbf{X}, \mathbf{u}_j^T\mathbf{X}) = cov(\mathbf{v}_i^T\mathbf{Y}, \mathbf{v}_j^T\mathbf{Y}) = 0,\thinspace  \forall \thinspace  j<i$$
+
+In practice, CCA is carried out by performing singular value decomposition on the correlation matrix. \\
+
+The transformations learned by CCA give the basis for our anomaly detection system. When two modalities contain clean data of the type encountered during training, we expect their canonical variables to have a high correlation. If a modality contains corrupted data which differs enough from the training distribution, the transformation will not be optimal and we expect the correlation to be lower.\\
+
+As discussed, CCA is limited to maximising correlations between two sets of variates using linear transformations. To use CCA efficiently with many modalities we require a method of learning transformations for more than two sets of variates.
+
+\subsection{Generalised Canonical Correlation Analysis}
+GCCA \cite{GCCA} constructs a shared representation $G$ and maximises the correlations between each set of variates and  the shared representation.
+
+\subsection{Deep Generalised Canonical Correlation Analysis}
+DGCCA builds upon Deep CCA \cite{DCCA} to extend GCCA to learn nonlinear transformations. A neural network is trained for each modality to learn a nonlinear transformation to a new representation which is used for GCCA. The networks are trained by backpropagating the objective of GCCA, maximising the ability of their outputs to be correlated.\\
+
+Benton et al. \cite{DGCCA} derive a loss function for GCCA based on pairwise correlations between modalities.\\
+
+Using DGCCA we can obtain representations of any number of modalities, with the expectation that correlation between any two representations is high.
+
+\section{Corruption detection}
+\subsection{Pairwise corruption detection}
+To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. To calculate the correlation between modalities $a$ and $b$ based on $N$ samples with cca dimension $C$, we have canonical variate matrices $A, B \in \mathbb{R}^{N\times C}$ and calculate the combined correlation, the sum of correlations over each canonical variate:
+
+$$CombinedCorr(A, B) = \sum_{d=1}^C{corr((A_{s,d} | s=1..N), (B_{s,d} | s=1..N))}$$
+
+The expectation is that this measure is high when samples are drawn from the training distribution, but low when samples are corrupted and fall outside of it.\\
+
+To detect whether a given pair of modalities is corrupted, we compare their correlation with a threshold learned during training. Combined correlation is calculated between cca embeddings of clean data, as well as between clean and corrupt data. The intensity of corruption used affects the distribution of corrupt correlations, and therefore the learned threshold. We assume the correlations follow a normal distribution, and choose the threshold as the intersection between probability density functions of clean and corrupt modalities. For $m$ modalities, we learn $\frac{1}{2}m(m-1)$ thresholds.\\
+
+\todo[inline]{Image of modality corruption from pairwise corruption}
+
+\subsection{Modality corruption detection}
+The pairwise corruption detection stage yields a matrix $M\in\mathbb{B}^{m\times m}$, where $M_{i,j}$ is true if both modalities are clean, and false if one or both modalities are corrupted. We expect that when modality $i$ is corrupted, all entries of the ith row and column are false. The remaining modalities are true for all entries except that of the corrupted modality. This means that when many modalities are corrupted the row corresponding to a clean modality may still contain many corrupt pairs, making classification at this stage more difficult. A number of different methods of classification have been used. Note that at least 2 modalities must be clean for any classification to be carried out, fewer clean modalities will result in all pairwise classifications being negative, so any system using pairwise correlations can detect corruption in at most $m-2$ modalities.
+
+\subsubsection{Proportional classification}
+let $k$ be the proportion of pairs that are classified as corrupt. let $k_i$ be the proportion of pairs in row $i$ that are corrupt. We expect that $k_i = 1$ when modality $i$ is corrupt, and $k_i = \frac{c}{m-1}$ otherwise. When $M$ contains both clean and corrupt pairs and pairwise corruptions are 100\% accurate $1>k>\frac{c}{m-1}$. Therefore, by measuring $k$, we can mark modality $i$ as corrupt if $k_i > k$, or clean otherwise.\\
+In practice the accuracy of this method suffers when pairs are falsely classified as corrupt. If all modalities are clean, a single false negative pair classification can cause up to 2 modalities to be classified as corrupt, massively impacting accuracy.
+
+\subsubsection{Corruption estimation}
+\todo{Appendix?}
+$k$ can be calculated from the number of corrupt modalities c by 
+$$
+k = 1-\frac{(n-c)(n-c-1)}{n(n+1)}
+$$
+As we can calculate an estimate of $k$ directly from $M$, we can use the formula to estimate the number of corrupt modalities $c'$. If $c'$ is an integer, we can be more confident that the number of pairwise classification errors is low, otherwise we can be certain there are some errors. We can also use $c'$ to limit the number of modalities we classify as corrupt. Tests have been carried out limiting the number of corrupt modalities by rounding $c'$ to the nearer, higher, or lower integer.
+
+\subsubsection{Delta/Probablity classification}
+Rather than using the matrix $M$, we can use the difference between pairwise correlations and their trained thresholds to get a deeper view of corruption, based on the assumption that a genuinely corrupt pair will have a correlation further below their threshold than a false negative. We sum the differences across each row and mark the modality with the greatest negative value as corrupt, removing its correlations from $M$. We continue until no row has a negative total correlation. A variation uses the probability distributions learned during threshold training to estimate the probability correlation belongs to the clean and corrupt distributions. If the sum of corrupt probabilities is greater than the sum of clean probabilities, we classify a modality as corrupt, again removing its probabilities from $M$.
+
