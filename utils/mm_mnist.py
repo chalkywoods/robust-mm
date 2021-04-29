@@ -72,7 +72,6 @@ class MM_Classifier(nn.Module):
         return F.log_softmax(x.reshape((-1, 10)), dim=1)
 
             
-
 class CNN(nn.Module):
     def __init__(self, dropout=0.2, activation=F.relu):
         super(CNN, self).__init__()

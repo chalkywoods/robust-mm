@@ -106,7 +106,10 @@ class DGCCA:
         _, _, all_corrs[:,i,j] = window_corr(embeddings[i][:,0:embedding_dim], embeddings[j][:,0:embedding_dim], window, weighting=weighting)
       else:
         if window is None:
-          corrs[i, j] = combined_corr(embeddings[i][:,0:embedding_dim], embeddings[j][:,0:embedding_dim], weighting=weighting)
+          if weighting == 'flat':
+            corrs[i, j] = flat_corr(embeddings[i][:,0:embedding_dim], embeddings[j][:,0:embedding_dim])
+          else:
+            corrs[i, j] = combined_corr(embeddings[i][:,0:embedding_dim], embeddings[j][:,0:embedding_dim], weighting=weighting)
           corrs[j, i] = corrs[i, j]
         else:
           corrs[i, j], stds[i, j], _ = window_corr(embeddings[i][:,0:embedding_dim], embeddings[j][:,0:embedding_dim], window, weighting=weighting)
@@ -158,11 +161,19 @@ def combined_corr(x, y, weighting=np.mean):
       corrs.append(corrmatrix[i,i+dim])
   return weighting(np.nan_to_num(corrs))
 
+def flat_corr(x, y):
+  x = x.reshape((-1,))
+  y = y.reshape((-1,))
+  return np.corrcoef(x, y)[0,1]
+
 def window_corr(x, y, window, stride=False, weighting=np.mean):
   corrs = []
   stride = stride if stride else 1
   for i in range(0, x.shape[0] - window, stride):
-    corrs.append(combined_corr(x[i:i+window,:], y[i:i+window], weighting=weighting))
+    if weighting == 'flat':
+      corrs.append(flat_corr(x[i:i+window,:], y[i:i+window]))
+    else:
+      corrs.append(combined_corr(x[i:i+window,:], y[i:i+window], weighting=weighting))
   return np.mean(corrs), np.std(corrs), corrs
 
 @staticmethod

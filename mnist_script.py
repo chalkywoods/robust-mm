@@ -33,6 +33,8 @@ parser.add_argument('--noise_type', default='gmm',
                     help='Type of noise, gmm or gaussian')
 parser.add_argument('--thresh_method', default='intersection',
                     help='Anomaly detector threshold method to use')
+parser.add_argument('--thresh_method_param', type=float, default=None,
+                    help='Anomaly detector threshold method parameter')
 parser.add_argument('--data', default='../data',
                     help='Number of individual false negatives to ignore when classifying modalities')
 parser.add_argument('--repeat', type=int, default=0,
@@ -41,8 +43,10 @@ parser.add_argument('--seed', type=int, default=-1,
                     help='RNG seed. -1 for random seed')
 parser.add_argument('--train_snr', type=float, default=-1.0,
                     help='snr to use for threshold training. -1 for global snr')
-parser.add_argument('--ad_classifier', default='none',
+parser.add_argument('--ad_classifier', default='proportional',
                     help='function to use for rounding when estimating number of corrupt modalities. round, floor or ceiling, or none for proportional classification')
+parser.add_argument('--cca_weighting', default='mean',
+                    help='weighting method for windowed correlation. mean or flat')
 args = parser.parse_args()
 if args.train_snr == -1:
   train_snr = args.snr
@@ -52,12 +56,9 @@ else:
   train_snr = 0.65
 print('Using training snr of {}'.format(train_snr))
 
-try:
-  thresh_method = float(args.thresh_method)
-  print('Using hard thresholds of {}'.format(threshold))
-except:
-  thresh_method = args.thresh_method
-  print('Generating thresholds using {}'.format(thresh_method))
+print('Generating thresholds using {}'.format(args.thresh_method))
+if args.thresh_method_param is not None:
+  print('With parameter {}'.format(args.thresh_method_param))
 
 corruption_classifier = 'est_corrupt'
 round_func = np.round
@@ -73,6 +74,8 @@ elif args.ad_classifier == 'prob':
   corruption_classifier = 'prob'
 else:
   corruption_classifier = 'proportional'
+
+cca_weighting = args.cca_weighting if args.cca_weighting == 'flat' else np.mean
 
 print('Using {} corruption classifier'.format(corruption_classifier))
 if corruption_classifier == 'est_corrupt':
@@ -110,7 +113,8 @@ classifier.load_state_dict(torch.load('output/mm_mnist_cnn_moddrop.pth'))
 results = utils.evaluate.pipeline(classifier, dl_train_cca, dl_train_ad, dl_test_ad, cca_dim=args.cca_dim, 
                                   snr=args.snr, gmm_components=args.gmm_components, window_size=args.window_size, 
                                   grace=args.grace, cca_path='output/mm_mnist_cca_cnn_moddrop.pth', noise_type=args.noise_type, 
-                                  thresh_method=thresh_method, train_snr=train_snr, round_func=round_func, corruption_classifier=corruption_classifier)
-
-with open('output/cnn_moddrop_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.pkl'.format(args.batch_size, args.snr, args.gmm_components, args.cca_dim, args.window_size, args.grace, args.noise_type, args.thresh_method, args.repeat, train_snr, args.ad_classifier), 'wb') as f:
+                                  thresh_method=args.thresh_method, thresh_method_param=args.thresh_method_param, train_snr=train_snr, 
+                                  round_func=round_func, corruption_classifier=corruption_classifier, cca_weighting=cca_weighting)
+print('params: {} {} {} {} {} {} {} {} {} {} {} {} {}'.format(args.batch_size, args.snr, args.gmm_components, args.cca_dim, args.window_size, args.grace, args.noise_type, args.thresh_method, args.thresh_method_param, args.repeat, train_snr, args.ad_classifier, args.cca_weighting))
+with open('output/cnn_moddrop_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.pkl'.format(args.batch_size, args.snr, args.gmm_components, args.cca_dim, args.window_size, args.grace, args.noise_type, args.thresh_method, args.thresh_method_param, args.repeat, train_snr, args.ad_classifier, args.cca_weighting), 'wb') as f:
     pickle.dump(results, f)

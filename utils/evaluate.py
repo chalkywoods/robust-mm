@@ -150,7 +150,7 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
     return (np.array([[tp_pred, tn_pred, fp_pred, fn_pred],
                      [tp_ind, tn_ind, fp_ind, fn_ind]]), correct_raw/(i+window), correct_cleaned/(i+window), correct_ad_cleaned/(i+window))
 
-def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_components, window_size, grace, cca_path, noise_gen=None, noise_type='gmm', thresh_method='intersection', corruption_classifier='proportional', train_snr=None, round_func=np.round):
+def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_components, window_size, grace, cca_path, noise_gen=None, noise_type='gmm', thresh_method='intersection', thresh_method_param=None, corruption_classifier='proportional', train_snr=None, round_func=np.round, cca_weighting=np.mean):
     classifier.eval()
     train_snr = snr if train_snr is None else train_snr
     cca = dgcca.dgcca.DGCCA([[512, 125, 64]]*4, 32, device='cpu', use_all_singular_values=False)
@@ -169,9 +169,11 @@ def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_compone
         noise = lambda data: utils.noise.add_gaussian_noise(data, snr=train_snr)
     
     corrupt = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad, noise)]
-
+    
     detector = dgcca.anomaly_detection.CcaAnomalyDetector(cca)
-    detector.train(clean, corrupt, stride='auto', window=window_size, method=thresh_method, classifier=corruption_classifier, grace=grace, round_func=round_func)
+    detector.train(clean, corrupt, stride='auto', window=window_size, 
+                   method=thresh_method, method_param=thresh_method_param, classifier=corruption_classifier, 
+                   grace=grace, round_func=round_func, correlation_weighting=cca_weighting)
 
     if noise_type=='gmm':
         test_noise = lambda data, modality: noise_gen.add_noise(data, snr=snr, modality=modality)

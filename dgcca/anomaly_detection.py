@@ -12,17 +12,21 @@ class CcaAnomalyDetector:
         self.dgcca = dgcca
         self.device = device
 
-    def train(self, clean, corrupt, embedding_dim=None, window=50, stride=False, method='intersection', classifier='proportional', plot=False, snr=1, grace=0, round_func=np.round):
+    def train(self, clean, corrupt, embedding_dim=None, window=50, stride=False, method='intersection', method_param=None, classifier='proportional', plot=False, snr=1, grace=0, round_func=np.round, correlation_weighting=np.mean):
         thresholds = np.ones((self.dgcca.modalities, self.dgcca.modalities))
-        if isinstance(method, float) and not plot:
+        if method == 'hard' and not plot:
             for i in range(self.dgcca.modalities):
                 for j in range(i+1, self.dgcca.modalities):
-                    thresholds[i,j] = method
-                    thresholds[j,i] = method
+                    thresholds[i,j] = method_param
+                    thresholds[j,i] = method_param
             self.thresholds = thresholds
             self.set_classifier(classifier, grace, round_func)
             return
 
+        if window == 1:
+            self.weighting = 'flat'
+        else:
+            self.weighting = correlation_weighting
         print('Getting data embeddings...')
         clean_embedding = [self.dgcca.get_embedding(modality, i) for (i, modality) in enumerate(clean)]
         print('Getting noise embeddings...')
@@ -39,24 +43,30 @@ class CcaAnomalyDetector:
             for i in range(self.dgcca.modalities):
                 for j in range(i+1, self.dgcca.modalities):
                     pbar_embed.set_description('Computing ({},{}) threshold'.format(i,j))
-                    true_mean, true_std, true_corrs = dgcca.window_corr(clean_embedding[i], clean_embedding[j], window, stride=stride)
+                    true_mean, true_std, true_corrs = dgcca.window_corr(clean_embedding[i], clean_embedding[j], window, stride=stride, weighting=self.weighting)
                     noise_mean, noise_std, noise_corrs = dgcca.window_corr(np.append(clean_embedding[i], corrupt_embedding[i], 0), 
-                                                                np.append(corrupt_embedding[j], clean_embedding[j], 0), window, stride=stride)
+                                                                np.append(corrupt_embedding[j], clean_embedding[j], 0), window, stride=stride, weighting=self.weighting)
                     if classifier == 'prob':
                         distributions[i,j,0] = norm(loc=true_mean, scale=true_std)
                         distributions[j,i,0] = norm(loc=true_mean, scale=true_std)
                         distributions[i,j,1] = norm(loc=noise_mean, scale=noise_std)
                         distributions[j,i,1] = norm(loc=noise_mean, scale=noise_std)
-                    if isinstance(method, float):
-                        thresholds[i,j] = method
-                        thresholds[j,i] = method
-                    if method == 'intersection':
-                        threshold = get_thresh(true_mean, noise_mean, true_std, noise_std)
+                    if method == 'hard':
+                        thresholds[i,j] = method_param
+                        thresholds[j,i] = method_param
+                    elif method == 'ppf':
+                        threshold = norm.ppf(q=method_param, loc=true_mean, scale=true_std)
                         thresholds[i,j] = threshold
                         thresholds[j,i] = threshold
                     elif method == 'noise_mean':
                         thresholds[i,j] = noise_mean
                         thresholds[j,i] = noise_mean
+                    elif method == 'intersection':
+                        threshold = get_thresh(true_mean, noise_mean, true_std, noise_std)
+                        thresholds[i,j] = threshold
+                        thresholds[j,i] = threshold
+                    else:
+                        raise ValueError('threshold method {} not recognised'.format(method))
                     type_1[i,j] = norm.cdf(thresholds[i,j], loc=true_mean, scale=true_std)
                     type_2[i,j] = 1-norm.cdf(thresholds[i,j], loc=noise_mean, scale=noise_std)
                     if plot:
@@ -98,7 +108,7 @@ class CcaAnomalyDetector:
         return self.classifier(data, evaluating=evaluating)
 
     def prob_classifier(self, data, evaluating=False):
-        corrs = self.dgcca.get_corrs(data)
+        corrs = self.dgcca.get_corrs(data, weighting=self.weighting)
         probs = np.zeros_like(self.distributions)
         for row in range(corrs.shape[0]):
             for col in range(corrs.shape[1]):
@@ -120,7 +130,7 @@ class CcaAnomalyDetector:
             return pred
 
     def delta_classifier(self, data, evaluating=False):
-        corrs = self.dgcca.get_corrs(data)
+        corrs = self.dgcca.get_corrs(data, weighting=self.weighting)
         deltas = corrs - self.thresholds                         # Calculate distance from thresholds
         corrupt = []
         while (np.sum(deltas, axis=1)<0).any():                  # Continue until all rows are net positive
@@ -135,7 +145,7 @@ class CcaAnomalyDetector:
             return pred
 
     def proportional_classifier(self, data, evaluating=False):
-        corrs = self.dgcca.get_corrs(data) 
+        corrs = self.dgcca.get_corrs(data, weighting=self.weighting) 
         clean = corrs>self.thresholds                                                   # Identify corrupt pairs
         cleanness = clean.sum()/(clean.shape[0]*clean.shape[1]-self.dgcca.modalities)   # Calculate proportion of pairs corrupted
         pred = (clean.sum(axis=0)/(self.dgcca.modalities-1-self.grace)) >= cleanness    # Consider modalities with a higher proportion of corruption corrupted
@@ -145,8 +155,8 @@ class CcaAnomalyDetector:
             return pred
 
     def est_corrupt_classifier(self, data, evaluating=False):
-        corrs = self.dgcca.get_corrs(data)
-        clean = corrs>self.thresholds                                                       # Identify corrupt pairs
+        corrs = self.dgcca.get_corrs(data, weighting=self.weighting)
+        clean = corrs>self.thresholds                                                        # Identify corrupt pairs
         clean_amount = corrs-self.thresholds
         corruptness = 1 - clean.sum()/(clean.shape[0]*clean.shape[1]-self.dgcca.modalities)  # Calculate proportion of pairs corrupted
         corrupt_est = min(self.est_num_corrupted(corruptness)[1], self.dgcca.modalities - 2) # Estimate number of corrupted modalities using this proportion
@@ -188,5 +198,4 @@ def solve(m1,m2,std1,std2):
     a = 1/(2*std1**2) - 1/(2*std2**2)
     b = m2/(std2**2) - m1/(std1**2)
     c = m1**2 /(2*std1**2) - m2**2 / (2*std2**2) - np.log(std2/std1)
-    #print([a,b,c])
     return np.roots(np.nan_to_num([a,b,c]))
