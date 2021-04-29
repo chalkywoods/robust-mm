@@ -97,6 +97,76 @@ class GMMNoise:
                 modalities.append(torch.as_tensor(data[i], dtype=torch.float))
         return modalities
 
+class SquareGMMNoise:
+    def __init__(self, data, n_components):
+        print(data.shape)
+        self.shape = data[0][0].shape
+        flattened = np.stack([sample.reshape((-1,)) for sample in data])
+        print(flattened.shape)
+        self.gmm = GaussianMixture(n_components, verbose=2)
+        print('Fitting {}-D GMM'.format(flattened.shape[1]))
+        self.gmm.fit(flattened)
+
+    def get_noise(self, shape):
+        noise = self.gmm.sample(shape)[0]
+        return noise.reshape((noise.shape[0], int(np.sqrt(noise.shape[1])), int(np.sqrt(noise.shape[1]))))
+
+    def add_noise(self, data, snr=1):
+        noise = torch.as_tensor(self.get_noise(data.shape[0]), dtype=torch.float)
+        return (noise + snr*data)/(snr + 1)
+
+class ModGMMNoise:
+    def __init__(self, data, n_components):
+        modalities = [[]]*4
+        for data, _ in data:
+            self.models = [SquareGMMNoise(modality, n_components) for modality in data]
+
+    def add_noise(self, data, snr=1, modality=None):
+        modality = range(len(data)) if modality is None else modality
+        modalities = []
+        for i in range(len(data)):
+            if i in modality:
+                modalities.append(self.models[i].add_noise(data[i], snr=snr))
+            else:
+                modalities.append(data[i])
+        return modalities
+
+
+class FullGMMNoise:
+    def __init__(self, data, n_components):
+        fulldata = []
+        for data, _ in data:
+            fulldata = np.array([self.reconstruct([data[mod][sample] for mod in range(4)]) for sample in range(len(data[0]))])
+        self.model = SquareGMMNoise(fulldata, n_components)
+
+    def add_noise(self, data, snr=1, modality=None):
+        allnoise = [torch.as_tensor(mod, dtype=torch.float).reshape((-1,1,14,14)) for mod in self.deconstruct(self.model.get_noise(data[0].shape[0]))]
+        modality = range(len(data)) if modality is None else modality
+        modalities = []
+        for i in range(len(data)):
+            if i in modality:
+                modalities.append((allnoise[i] + torch.as_tensor(snr*data[i], dtype=torch.float))/(1 + snr))
+            else:
+                modalities.append(torch.as_tensor(data[i], dtype=torch.float))
+        return modalities
+
+    def reconstruct(self, data):
+        full_image = np.zeros((28,28))
+        full_image[0:14,0:14] = data[0].reshape((14,14))
+        full_image[0:14,14:] = data[1].reshape((14,14))
+        full_image[14:,0:14] = data[2].reshape((14,14))
+        full_image[14:,14:] = data[3].reshape((14,14))
+        return full_image
+
+    def deconstruct(self, data):
+        modalities = [[]]*4
+        modalities[0] = data[:,0:14,0:14]
+        modalities[1] = data[:,0:14,14:28]
+        modalities[2] = data[:,14:28,0:14]
+        modalities[3] = data[:,14:28,14:28]
+        return modalities
+
+
 def get_gaussian_noise(shape):
     return np.random.default_rng().normal(0,1,shape)        
         
