@@ -34,6 +34,10 @@ We first look at applying the anomaly detection pipeline to Multimodal MNIST (MM
     
 ModDrop \cite{ModDrop} is used before the tail to improve robustness to missing modalities as we intend to remove corrupt modalities at this stage. The classifier achieves 97.8\% accuracy on the test set.\\
 
-We use the intermediate representations output by the head networks for anomaly detection. The outputs are flattened into 512 element vectors. The networks used in the first stage of DGCCA are fully connected, with layer sizes [512, 125, 64, 32]. These networks are trained on 50000 training samples, with the remaining 10000 held out for corruption detection training. Once the network heads are trained, a linear GCCA is trained on the resulting embeddings to produce transformations to the top $cca_dim$ canonical variates. \\
+We use the intermediate representations output by the head networks for anomaly detection. The outputs are flattened into 512 element vectors. The networks used in the first stage of DGCCA are fully connected, with layer sizes [512, 125, 64, 32]. These networks are trained on 50000 training samples, with the remaining 10000 held out for corruption detection training. Once the network heads are trained, a linear GCCA is trained on the resulting embeddings to produce transformations to the top $cca\_dim$ canonical variates.\\
 
-The remaining 10000 elements of the training set are used for training the pairwise correlation thresholds. Correlations between DGCCA embeddings for each pair of modalities are measured on clean data and on data that has been corrupted with noise, picking the threshold as the intersection of the gaussians approximating the distributions of correlations. As we have 4 modalities, we learn 6 thresholds.
+The remaining 10000 elements of the training set are used for training the pairwise correlation thresholds. Correlations between DGCCA embeddings for each pair of modalities are measured on clean data and on data that has been corrupted with noise, picking the threshold as the intersection of the gaussians approximating the distributions of correlations. As we have 4 modalities, we learn 6 thresholds.\\
+
+\todo{Add distribution graph?}
+\todo{choice of params at this point?}
+

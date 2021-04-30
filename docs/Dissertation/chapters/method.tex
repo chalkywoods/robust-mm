@@ -8,12 +8,12 @@ We propose a multimodal anomaly detection system based on the correlations betwe
     \caption{Main components of the multimodal classifier and corruption detection pipeline}
     \label{fig:pipeline}
 \end{figure}
-
+2
 \section{Canonical Correlation Analysis}
 \subsection{Linear CCA}
 Canonical Correlation Analysis \cite{CCA} is a a generalised way of analysing cross covariance matrices between two random variables. Given two random variables $\mathbf{X}=(X_1,...,X_n | X_i\in\mathbb{R}^{d_X})$ and $\mathbf{Y}=(Y_1,...,Y_n | Y_i\in\mathbb{R}^{d_Y})$, CCA learns transformations $\mathbf{u}_1\in\mathbb{R}^{d_X}$ and $\mathbf{v}_1\in\mathbb{R}^{d_Y}$ such that $$corr(\mathbf{u}_1^T\mathbf{X}, \mathbf{v}_1^T\mathbf{Y}) \textrm{ is maximised.}$$ $(\mathbf{u}_1^T\mathbf{X}, \mathbf{v}_1^T\mathbf{Y})$ are known as the first pair of canonical variables. Further canonical variables maximise correlation orthogonally to the first pair of canonical variables, with the $i^{th}$ pair of canonical variables $(\mathbf{u}_i^T\mathbf{X}, \mathbf{v}_i^T\mathbf{Y})$ maximising $$corr(\mathbf{u}_i^T\mathbf{X}, \mathbf{v}_i^T\mathbf{Y})$$ subject to $$cov(\mathbf{u}_i^T\mathbf{X}, \mathbf{u}_j^T\mathbf{X}) = cov(\mathbf{v}_i^T\mathbf{Y}, \mathbf{v}_j^T\mathbf{Y}) = 0,\thinspace  \forall \thinspace  j<i$$
 
-In practice, CCA is carried out by performing singular value decomposition on the correlation matrix. \\
+In practice, CCA is carried out by performing singular value decomposition on the covariance matrix and taking the top $k$ eigenvectors. \\
 
 The transformations learned by CCA give the basis for our anomaly detection system. When two modalities contain clean data of the type encountered during training, we expect their canonical variables to have a high correlation. If a modality contains corrupted data which differs enough from the training distribution, the transformation will not be optimal and we expect the correlation to be lower.\\
 
@@ -29,7 +29,20 @@ Benton et al. \cite{DGCCA} derive a loss function for GCCA based on pairwise cor
 
 Using DGCCA we can obtain representations of any number of modalities, with the expectation that correlation between any two representations is high.
 
+\section{Noise Generation}
+To train and evaluate our anomaly detector, we require a method of adding noise to the input modalities. We experiment with a number of different methods of generating noise using Gaussian Mixture Models (GMM):
+\begin{itemize}
+    \item Gaussian noise: Sample from the standard normal distribution for each feature in the input modality.
+    \item Feature GMM: Sample from 1-D GMMs fitted to each feature of the input modality.
+    \item Modality GMM: Sample from multi dimensional GMMs fitted to each modality.
+    \item Full GMM: sample from a multi dimensional GMM fitted to the entire dataset.
+\end{itemize}
+We expect each method to produce more realistic and harder to detect noise than the previous, with more gmm components producing more realistic noise still. Noise is added to the raw data on a per-modality basis before it is passed through the first stage of the classifier. Noise is added based on the signal to noise ratio specified, with a corrupt modality given by $corrupt = \frac{snr\times raw + noise}{snr + 1}$.
+
+
 \section{Corruption detection}
+The general method for detecting corrupt modalities involves first looking at correlation between each of the $\frac{1}{2}(m-1)m$ possible pairs of modalities and using the information gained from each of these comparisons to infer which modalities are corrupt.
+
 \subsection{Pairwise corruption detection}
 To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. To calculate the correlation between modalities $a$ and $b$ based on $N$ samples with cca dimension $C$, we have canonical variate matrices $A, B \in \mathbb{R}^{N\times C}$ and calculate the combined correlation, the sum of correlations over each canonical variate:
 
@@ -37,9 +50,13 @@ $$CombinedCorr(A, B) = \sum_{d=1}^C{corr((A_{s,d} | s=1..N), (B_{s,d} | s=1..N))
 
 The expectation is that this measure is high when samples are drawn from the training distribution, but low when samples are corrupted and fall outside of it.\\
 
-To detect whether a given pair of modalities is corrupted, we compare their correlation with a threshold learned during training. Combined correlation is calculated between cca embeddings of clean data, as well as between clean and corrupt data. The intensity of corruption used affects the distribution of corrupt correlations, and therefore the learned threshold. We assume the correlations follow a normal distribution, and choose the threshold as the intersection between probability density functions of clean and corrupt modalities. For $m$ modalities, we learn $\frac{1}{2}m(m-1)$ thresholds.\\
+To detect whether a given pair of modalities is corrupted, we compare their correlation with a threshold learned during training. Combined correlation is calculated between cca embeddings of clean data, as well as between clean and corrupt data. The intensity of corruption used affects the distribution of corrupt correlations, and therefore the learned threshold.\\
 
-\todo[inline]{Image of modality corruption from pairwise corruption}
+We assume the correlations follow a normal distribution and experiment with two methods of choosing a threshold. To maximise accuracy of each pairwise anomaly detector, we choose the thresholds as the intersection between probability density functions of clean and corrupt modalities. To minimise the number of false negatives (modalities erroneously classified as corrupt) we choose the thresholds as a percentile of the clean distribution.
+
+\todo{correlation histogram with approximations, percentile and intersection thresholds, maybe type 1 \& 2 errors}
+
+\todo{Image of modality corruption from pairwise corruption}
 
 \subsection{Modality corruption detection}
 The pairwise corruption detection stage yields a matrix $M\in\mathbb{B}^{m\times m}$, where $M_{i,j}$ is true if both modalities are clean, and false if one or both modalities are corrupted. We expect that when modality $i$ is corrupted, all entries of the ith row and column are false. The remaining modalities are true for all entries except that of the corrupted modality. This means that when many modalities are corrupted the row corresponding to a clean modality may still contain many corrupt pairs, making classification at this stage more difficult. A number of different methods of classification have been used. Note that at least 2 modalities must be clean for any classification to be carried out, fewer clean modalities will result in all pairwise classifications being negative, so any system using pairwise correlations can detect corruption in at most $m-2$ modalities.
@@ -49,8 +66,8 @@ let $k$ be the proportion of pairs that are classified as corrupt. let $k_i$ be 
 In practice the accuracy of this method suffers when pairs are falsely classified as corrupt. If all modalities are clean, a single false negative pair classification can cause up to 2 modalities to be classified as corrupt, massively impacting accuracy.
 
 \subsubsection{Corruption estimation}
-\todo{Appendix?}
 $k$ can be calculated from the number of corrupt modalities c by 
+\todo{Derivation in appendix?}
 $$
 k = 1-\frac{(n-c)(n-c-1)}{n(n+1)}
 $$
