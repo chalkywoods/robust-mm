@@ -8,6 +8,7 @@ We propose a multimodal anomaly detection system based on the correlations betwe
     \caption{Main components of the multimodal classifier and corruption detection pipeline}
     \label{fig:pipeline}
 \end{figure}
+
 2
 \section{Canonical Correlation Analysis}
 \subsection{Linear CCA}
@@ -30,43 +31,76 @@ Benton et al. \cite{DGCCA} derive a loss function for GCCA based on pairwise cor
 Using DGCCA we can obtain representations of any number of modalities, with the expectation that correlation between any two representations is high.
 
 \section{Noise Generation}
-To train and evaluate our anomaly detector, we require a method of adding noise to the input modalities. We experiment with a number of different methods of generating noise using Gaussian Mixture Models (GMM):
+To train and evaluate the anomaly detector, we require a method of adding noise to the input modalities. We experiment with a number of different methods of generating noise using Gaussian Mixture Models (GMM):
 \begin{itemize}
     \item Gaussian noise: Sample from the standard normal distribution for each feature in the input modality.
     \item Feature GMM: Sample from 1-D GMMs fitted to each feature of the input modality.
     \item Modality GMM: Sample from multi dimensional GMMs fitted to each modality.
     \item Full GMM: sample from a multi dimensional GMM fitted to the entire dataset.
 \end{itemize}
-We expect each method to produce more realistic and harder to detect noise than the previous, with more gmm components producing more realistic noise still. Noise is added to the raw data on a per-modality basis before it is passed through the first stage of the classifier. Noise is added based on the signal to noise ratio specified, with a corrupt modality given by $corrupt = \frac{snr\times raw + noise}{snr + 1}$.
+We expect each method to produce more realistic and harder to detect noise than the previous, with more gmm components producing more realistic noise still. Noise is added to the raw data on a per-modality basis before it is passed through the first stage of the classifier. Noise is added based on the signal to noise ratio specified (Figure \ref{fig:noise}), with a corrupt modality given by $corrupt = \frac{snr\times \mathbf{raw} + \mathbf{noise}}{snr + 1}$.
 
+\begin{figure}[H]
+    \centering\captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\textwidth]{images/noise.png}
+    \caption{An example MNIST image under varying types and strengths of noise, with all gaussian mixture models containing 5 components.}
+    \label{fig:noise}
+\end{figure}
 
 \section{Corruption detection}
 The general method for detecting corrupt modalities involves first looking at correlation between each of the $\frac{1}{2}(m-1)m$ possible pairs of modalities and using the information gained from each of these comparisons to infer which modalities are corrupt.
 
 \subsection{Pairwise corruption detection}
-To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. To calculate the correlation between modalities $a$ and $b$ based on $N$ samples with cca dimension $C$, we have canonical variate matrices $A, B \in \mathbb{R}^{N\times C}$ and calculate the combined correlation, the sum of correlations over each canonical variate:
-
+To observe the level of correlation between two modalities we require multiple samples. We use the transformations learned by DGCCA to generate a representation of each modality. To calculate the correlation between modalities $a$ and $b$ based on $N$ samples with cca dimension $C$, we have canonical variate matrices $A, B \in \mathbb{R}^{N\times C}$ and again experiment with two different methods. 
+\begin{itemize}
+    \item Combined correlation, the sum of correlations over each canonical variate:
 $$CombinedCorr(A, B) = \sum_{d=1}^C{corr((A_{s,d} | s=1..N), (B_{s,d} | s=1..N))}$$
+    \item Flat correlation, the correlation between the flattened canonical variate matrices:
+$$FlatCorr(A, B) = corr((A_{s,d} | s=1..N, d=1..C), (B_{s,d} | s=1..N, d=1..C))$$
+\end{itemize}
 
-The expectation is that this measure is high when samples are drawn from the training distribution, but low when samples are corrupted and fall outside of it.\\
+The expectation is that these measures are high when samples are drawn from a similar distribution to the training set, but low when samples are corrupted and fall outside of it. Note that $CombinedCorr$ requires at least two samples, whilst $FlatCorr$ can be used to calculate correlation between single samples.\\
 
 To detect whether a given pair of modalities is corrupted, we compare their correlation with a threshold learned during training. Combined correlation is calculated between cca embeddings of clean data, as well as between clean and corrupt data. The intensity of corruption used affects the distribution of corrupt correlations, and therefore the learned threshold.\\
 
-We assume the correlations follow a normal distribution and experiment with two methods of choosing a threshold. To maximise accuracy of each pairwise anomaly detector, we choose the thresholds as the intersection between probability density functions of clean and corrupt modalities. To minimise the number of false negatives (modalities erroneously classified as corrupt) we choose the thresholds as a percentile of the clean distribution.
+We assume the correlations follow a normal distribution and experiment with two methods of choosing a threshold. To maximise accuracy of each pairwise anomaly detector (Figure \ref{fig:threshold_dist}), we choose the thresholds as the intersection between probability density functions of clean and corrupt modalities. To minimise the number of false negatives (Figure \ref{fig:ppf_dist}) (clean modalities erroneously classified as corrupt) we choose the thresholds as a percentile of the clean distribution.
 
-\todo{correlation histogram with approximations, percentile and intersection thresholds, maybe type 1 \& 2 errors}
+\begin{figure}[ht]
+    \captionsetup{width=.9\linewidth}
+    \begin{subfigure}{.5\textwidth}
+      \centering\captionsetup{width=.8\linewidth}
+      \includegraphics[width=.9\linewidth]{images/threshold_dist_clean.png}  
+      \caption{Correlation thresholds using the intersection method. $P($type I error$)=0.028, P($type II error$)=0.023$}
+      \label{fig:threshold_dist}
+    \end{subfigure}
+    \begin{subfigure}{.5\textwidth}
+      \centering\captionsetup{width=.8\linewidth}
+      \includegraphics[width=.9\linewidth]{images/ppf_dist_clean.png}  
+      \caption{Correlation thresholds using the percentile method with p-value 0.01. $P($type I error$)=0.010, P($type II error$)=0.074$}
+      \label{fig:ppf_dist}
+    \end{subfigure}
+    \caption{Pairwise correlation distributions using two different threshold methods. Note the probability of a false negative can be chosen using the percentile method, giving a much smaller probability in Figure (b) than in Figure (a).}
+    \label{fig:correlation_dist}
+\end{figure}
 
 \todo{Image of modality corruption from pairwise corruption}
 
 \subsection{Modality corruption detection}
 The pairwise corruption detection stage yields a matrix $M\in\mathbb{B}^{m\times m}$, where $M_{i,j}$ is true if both modalities are clean, and false if one or both modalities are corrupted. We expect that when modality $i$ is corrupted, all entries of the ith row and column are false. The remaining modalities are true for all entries except that of the corrupted modality. This means that when many modalities are corrupted the row corresponding to a clean modality may still contain many corrupt pairs, making classification at this stage more difficult. A number of different methods of classification have been used. Note that at least 2 modalities must be clean for any classification to be carried out, fewer clean modalities will result in all pairwise classifications being negative, so any system using pairwise correlations can detect corruption in at most $m-2$ modalities.
 
+\begin{figure}[H]
+    \centering\captionsetup{width=.8\linewidth}
+    \includegraphics[width=.5\textwidth]{images/all_corrs.png}
+    \caption{Relative corruption detected in modality pairs when modality 2 is corrupt in a 4 modality anomaly detector. Pairs containing modality 2 have correlations below their thresholds whilst the rest have correlations above their thresholds. The leading diagonal is ignored.}
+    \label{fig:all_corrs}
+\end{figure}
+
 \subsubsection{Proportional classification}
 let $k$ be the proportion of pairs that are classified as corrupt. let $k_i$ be the proportion of pairs in row $i$ that are corrupt. We expect that $k_i = 1$ when modality $i$ is corrupt, and $k_i = \frac{c}{m-1}$ otherwise. When $M$ contains both clean and corrupt pairs and pairwise corruptions are 100\% accurate $1>k>\frac{c}{m-1}$. Therefore, by measuring $k$, we can mark modality $i$ as corrupt if $k_i > k$, or clean otherwise.\\
 In practice the accuracy of this method suffers when pairs are falsely classified as corrupt. If all modalities are clean, a single false negative pair classification can cause up to 2 modalities to be classified as corrupt, massively impacting accuracy.
 
 \subsubsection{Corruption estimation}
-$k$ can be calculated from the number of corrupt modalities c by 
+$k$ can be calculated from the number of corrupt modalities $c$ by 
 \todo{Derivation in appendix?}
 $$
 k = 1-\frac{(n-c)(n-c-1)}{n(n+1)}
