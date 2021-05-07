@@ -83,7 +83,6 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
     classifier.eval()
     detector.grace=grace
     detector.round_func=round_func
-
     tp_pred, tn_pred, fp_pred, fn_pred, tp_ind, tn_ind, fp_ind, fn_ind = (0,0,0,0,0,0,0,0)
     correct_raw = 0
     correct_cleaned = 0
@@ -124,7 +123,7 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
                     correct_raw += 1
 
             # Accuracy for perfectly cleaned data (labels)
-            cleaned_data = embedding
+            cleaned_data = [mod.clone() for mod in embedding]
             for mod in corrupt:
                 cleaned_data[mod] = torch.zeros_like(cleaned_data[mod])
 
@@ -134,7 +133,7 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
                     correct_cleaned += 1
 
             # Accuracy for ad cleaned data (predictions)
-            ad_cleaned_data = embedding
+            ad_cleaned_data = [mod.clone() for mod in embedding]
             for mod in range(len(pred)):
                 if pred[mod] == False:
                     ad_cleaned_data[mod] = torch.zeros_like(ad_cleaned_data[mod])
@@ -160,16 +159,20 @@ def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_compone
 
     clean = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad)]
     
-    if noise_gen is None and noise_type=='gmm':
-        noise_gen = utils.noise.GMMNoise(train_ad, gmm_components) # Train GMM for each pixel to generate noise
-
     if noise_type=='gmm':
-        noise = lambda data: noise_gen.add_noise([mod.numpy() for mod in data], snr=train_snr) # noise and image weighted equally
+        noise_gen = utils.noise.GMMNoise(train_ad, gmm_components) # Per pixel GMM
+    elif noise_type=='mod':
+        noise_gen = utils.noise.ModGMMNoise(train_ad, gmm_components) # Per modality GMM
+    elif noise_type=='full':
+        noise_gen = utils.noise.FullGMMNoise(train_ad, gmm_components) # Cross modality GMM
+
+    if noise_type=='gaussian':
+        noise = lambda data: utils.noise.add_gaussian_noise(data, snr=train_snr) # Normal distribution
     else:
-        noise = lambda data: utils.noise.add_gaussian_noise(data, snr=train_snr)
+        noise = lambda data: noise_gen.add_noise([mod.numpy() for mod in data], snr=train_snr)
     
     corrupt = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad, noise)]
-    
+
     detector = dgcca.anomaly_detection.CcaAnomalyDetector(cca)
     detector.train(clean, corrupt, stride='auto', window=window_size, 
                    method=thresh_method, method_param=thresh_method_param, classifier=corruption_classifier, 

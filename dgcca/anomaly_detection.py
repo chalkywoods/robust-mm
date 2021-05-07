@@ -36,7 +36,11 @@ class CcaAnomalyDetector:
         if stride == 'auto':
             stride = int(clean[0].shape[0]/5000)
         if plot:
-            fig, ax = plt.subplots(nrows=self.dgcca.modalities, ncols=self.dgcca.modalities, sharex=True, sharey=True, figsize=(15,15))
+            fig, ax = plt.subplots(nrows=self.dgcca.modalities, ncols=self.dgcca.modalities, sharey=True, figsize=(15,15))
+            method_string = '{}, Threshold parameter: {}'.format(method, method_param) if method in ['hard', 'ppf'] else method
+            #fig.tight_layout()
+            #fig.subplots_adjust(top=0.92, hspace = 0.22)
+            #fig.suptitle('Pairwise correlation distributions and thresholds over {} samples. Threshold method: {}'.format(window, method), fontsize=20)
             x = np.linspace(-1, 1, 100)
         distributions = np.empty((self.dgcca.modalities, self.dgcca.modalities, 2), dtype='object') if classifier == 'prob' else None
         with tqdm.tqdm(total=(self.dgcca.modalities*(self.dgcca.modalities-1))/2) as pbar_embed:
@@ -70,17 +74,15 @@ class CcaAnomalyDetector:
                     type_1[i,j] = norm.cdf(thresholds[i,j], loc=true_mean, scale=true_std)
                     type_2[i,j] = 1-norm.cdf(thresholds[i,j], loc=noise_mean, scale=noise_std)
                     if plot:
-                        ax[i,j].plot(x, norm.pdf(x, true_mean, true_std), c='green')
-                        ax[i,j].hist(true_corrs, color='green', alpha=0.5, density=True)
-                        ax[i,j].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
-                        ax[i,j].hist(noise_corrs, color='red', alpha=0.5, density=True)
-                        ax[i,j].axvline(thresholds[i,j], c='black')
-                        ax[j,i].plot(x, norm.pdf(x, true_mean, true_std), c='green')
-                        ax[j,i].hist(true_corrs, color='green', alpha=0.5, density=True)
-                        ax[j,i].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
-                        ax[j,i].hist(noise_corrs, color='red', alpha=0.5, density=True)
-                        ax[j,i].axvline(thresholds[j,i], c='black')
-
+                        for row, col in zip((i,j), (j,i)):
+                            ax[row,col].plot(x, norm.pdf(x, true_mean, true_std), c='green')
+                            ax[row,col].hist(true_corrs, color='green', alpha=0.5, density=True)
+                            ax[row,col].plot(x, norm.pdf(x, noise_mean, noise_std), c='red')
+                            ax[row,col].hist(noise_corrs, color='red', alpha=0.5, density=True)
+                            ax[row,col].axvline(thresholds[i,j], c='black')
+                            #ax[row,col].text(0.5,-0.15, 'Type 1: {:.2f}, Type 2: {:.2f}'.format(type_1[i,j], type_2[i,j]), ha="center", transform=ax[row,col].transAxes)
+                            #ax[row,col].set_title('Type 1: {:.2f}, Type 2: {:.2f}'.format(type_1[i,j], type_2[i,j]))
+                            ax[row,col].set_xlim(-1,1)
                     pbar_embed.update(1)
         self.thresholds = thresholds
         self.type_1 = type_1
@@ -140,7 +142,7 @@ class CcaAnomalyDetector:
             deltas[:,next_corrupt] = 0                           # .. and column
         pred = np.array([False if mod in corrupt else True for mod in range(self.dgcca.modalities)])
         if evaluating:
-            return (pred, corrs>self.thresholds)
+            return (pred, corrs>self.thresholds, corrs-self.thresholds)
         else:
             return pred
 
