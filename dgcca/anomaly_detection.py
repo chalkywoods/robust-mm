@@ -142,7 +142,7 @@ class CcaAnomalyDetector:
             deltas[:,next_corrupt] = 0                           # .. and column
         pred = np.array([False if mod in corrupt else True for mod in range(self.dgcca.modalities)])
         if evaluating:
-            return (pred, corrs>self.thresholds, corrs-self.thresholds)
+            return (pred, corrs>self.thresholds)
         else:
             return pred
 
