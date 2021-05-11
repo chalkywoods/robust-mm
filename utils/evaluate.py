@@ -80,6 +80,7 @@ def eval_ad(classifier, data, detector, noise, num_corrupt=0, window=20, grace=0
 
 
 def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=20, grace=0, round_func=np.round):
+    noise = [noise] if type(noise) != list else noise
     classifier.eval()
     detector.grace=grace
     detector.round_func=round_func
@@ -88,12 +89,13 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
     correct_cleaned = 0
     correct_ad_cleaned = 0
     with tqdm.tqdm(total=len(range(0, len(data[0])-window, window))) as pbar:
+        counter = 0
         for i in range(0, len(data[0])-window, window):
             clean = np.ones(len(data))
             corrupt = np.random.default_rng().choice(len(data), size=num_corrupt, replace=False)
             clean[corrupt] = 0
-            corrupt_data = noise([mod[i:i+window,:].numpy() for mod in data], corrupt)
-            corrupt_data = [torch.FloatTensor(mod) for mod in corrupt_data]
+            corrupt_data = noise[counter % len(noise)]([mod[i:i+window,:].numpy() for mod in data], corrupt)
+            corrupt_data = [torch.as_tensor(mod, dtype=torch.float) for mod in corrupt_data]
 
             embedding = classifier(corrupt_data, heads=True)
             pred, individual = detector.detect_anomalies([mod.double() for mod in embedding], evaluating=True)
@@ -143,7 +145,7 @@ def eval_both(classifier, data, labels, detector, noise, num_corrupt=0, window=2
                 if np.argmax(ad_cleaned_pred[sample]) == labels[i+sample]:
                     correct_ad_cleaned += 1
 
-
+            counter += 1
             pbar.update(1)
             pbar.set_description('Prediction accuracy: {:.2%} | Individual accuracy: {:.2%} | Raw accuracy: {:.2%} | Cleaned accuracy: {:.2%} | AD cleaned accuracy: {:.2%}'.format((tp_pred+tn_pred)/(4*(1+(i/window))), (tp_ind+tn_ind)/(6*(1+(i/window))), correct_raw/(i+window), correct_cleaned/(i+window), correct_ad_cleaned/(i+window)))
     return (np.array([[tp_pred, tn_pred, fp_pred, fn_pred],
@@ -158,36 +160,32 @@ def pipeline(classifier, train_cca, train_ad, test_ad, cca_dim, snr, gmm_compone
     cca.train(train_cca_embeddings, epochs=50, batch_size=128, cca_dim=cca_dim, cca_hidden_dim=1000)
 
     clean = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad)]
-    
-    if noise_type=='gmm':
-        noise_gen = utils.noise.GMMNoise(train_ad, gmm_components) # Per pixel GMM
-    elif noise_type=='mod':
-        noise_gen = utils.noise.ModGMMNoise(train_ad, gmm_components) # Per modality GMM
-    elif noise_type=='full':
-        noise_gen = utils.noise.FullGMMNoise(train_ad, gmm_components) # Cross modality GMM
 
-    if noise_type=='gaussian':
-        noise = lambda data: utils.noise.add_gaussian_noise(data, snr=train_snr) # Normal distribution
-    else:
-        noise = lambda data: noise_gen.add_noise([mod.numpy() for mod in data], snr=train_snr)
-    
-    corrupt = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad, noise)]
+    noise = []
+    if noise_type in ['gmm', 'all']:
+        gmm_gen = utils.noise.GMMNoise(train_ad, gmm_components) # Per pixel GMM
+        noise.append(lambda data, modality=None: gmm_gen.add_noise(data, snr=snr, modality=modality))
+    if noise_type in ['mod', 'all']:
+        mod_gen = utils.noise.ModGMMNoise(train_ad, gmm_components) # Per modality GMM
+        noise.append(lambda data, modality=None: mod_gen.add_noise(data, snr=snr, modality=modality))
+    if noise_type in ['full', 'all']:
+        full_gen = utils.noise.FullGMMNoise(train_ad, gmm_components) # Cross modality GMM
+        noise.append(lambda data, modality=None: full_gen.add_noise(data, snr=snr, modality=modality))
+    if noise_type in ['gaussian', 'all']:
+        noise.append(lambda data, modality=None: utils.noise.add_gaussian_noise(data, snr=snr, modality=modality))
+
+    corrupt = [torch.DoubleTensor(mod) for mod in embed(classifier, train_ad, noise[0])]
 
     detector = dgcca.anomaly_detection.CcaAnomalyDetector(cca)
     detector.train(clean, corrupt, stride='auto', window=window_size, 
                    method=thresh_method, method_param=thresh_method_param, classifier=corruption_classifier, 
                    grace=grace, round_func=round_func, correlation_weighting=cca_weighting)
 
-    if noise_type=='gmm':
-        test_noise = lambda data, modality: noise_gen.add_noise(data, snr=snr, modality=modality)
-    else:
-        test_noise = lambda data, modality: utils.noise.add_gaussian_noise(data, snr=snr, modality=modality)
-
     results = {}
     for data, label in test_ad:
         data = [mod.double() for mod in data]
         for num_corrupt in [0,1,2]:
             results[num_corrupt] = {}
-            results[num_corrupt]['ad'], results[num_corrupt]['raw'], results[num_corrupt]['clean'], results[num_corrupt]['ad_clean'] = eval_both(classifier, data, label, detector, test_noise, num_corrupt, window_size)
+            results[num_corrupt]['ad'], results[num_corrupt]['raw'], results[num_corrupt]['clean'], results[num_corrupt]['ad_clean'] = eval_both(classifier, data, label, detector, noise, num_corrupt, window_size)
     
     return results
