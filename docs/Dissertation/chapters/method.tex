@@ -16,29 +16,29 @@ Canonical Correlation Analysis \cite{CCA} is a a generalised way of analysing cr
 
 In practice, CCA is carried out by performing singular value decomposition on the covariance matrix and taking the top $k$ eigenvectors. \\
 
-The transformations learned by CCA give the basis for our anomaly detection system. When two modalities contain clean data of the type encountered during training, we expect their canonical variables to have a high correlation. If a modality contains corrupted data which differs enough from the training distribution, the transformation will not be optimal and we expect the correlation to be lower.\\
+The transformations learned by CCA give the basis for the anomaly detection system. When two modalities contain clean data of the type encountered during training, it is expected that their canonical variables have a high correlation. If a modality contains corrupted data which differs enough from the training distribution, the transformation will not be optimal it is expected that the correlation will be lower.\\
 
-As discussed, CCA is limited to maximising correlations between two sets of variates using linear transformations. To use CCA efficiently with many modalities we require a method of learning transformations for more than two sets of variates.
+As discussed, CCA is limited to maximising correlations between two sets of variates using linear transformations. To use CCA efficiently with many modalities a method of learning transformations for more than two sets of variates is required.
 
 \subsection{Generalised Canonical Correlation Analysis}
-GCCA \cite{GCCA} constructs a shared representation $G$ and maximises the correlations between each set of variates and  the shared representation.
+GCCA \cite{GCCA} constructs a shared representation $G$ and maximises the correlations between each set of variates and the shared representation.
 
 \subsection{Deep Generalised Canonical Correlation Analysis}
 DGCCA builds upon Deep CCA \cite{DCCA} to extend GCCA to learn nonlinear transformations. A neural network is trained for each modality to learn a nonlinear transformation to a new representation which is used for GCCA. The networks are trained by backpropagating the objective of GCCA, maximising the ability of their outputs to be correlated.\\
 
 Benton et al. \cite{DGCCA} derive a loss function for GCCA based on pairwise correlations between modalities.\\
 
-Using DGCCA we can obtain representations of any number of modalities, with the expectation that correlation between any two representations is high.
+Using DGCCA representations of any number of modalities can be obtained, with the expectation that correlation between any two representations is high.
 
 \section{Noise Generation}
-To train and evaluate the anomaly detector, we require a method of adding noise to the input modalities. We experiment with a number of different methods of generating noise using Gaussian Mixture Models (GMM):
+For training and evaluation of the anomaly detector a method of adding noise to the input modalities is required. A number of different methods of noise generation are used:
 \begin{itemize}
     \item Gaussian noise: Sample from the standard normal distribution for each feature in the input modality.
     \item Feature GMM: Sample from 1-D GMMs fitted to each feature of the input modality.
     \item Modality GMM: Sample from multi dimensional GMMs fitted to each modality.
-    \item Full GMM: sample from a multi dimensional GMM fitted to the entire dataset.
+    \item Full GMM: Sample from a multi dimensional GMM fitted to the entire dataset.
 \end{itemize}
-We expect each method to produce more realistic and harder to detect noise than the previous, with more gmm components producing more realistic noise still. Noise is added to the raw data on a per-modality basis before it is passed through the first stage of the classifier. Noise is added based on the signal to noise ratio specified (Figure \ref{fig:noise}), with a corrupt modality given by $corrupt = \frac{snr\times \mathbf{raw} + \mathbf{noise}}{snr + 1}$.
+It is expected that each method produces more realistic and harder to detect noise than the previous, with more gmm components producing more realistic noise. Noise is added to the raw data on a per-modality basis before it is passed through the first stage of the classifier based on the signal to noise ratio specified (Figure \ref{fig:noise}), with a corrupt modality given by $corrupt = \frac{snr\times \mathbf{raw} + \mathbf{noise}}{snr + 1}$.
 
 \begin{figure}[H]
     \centering\captionsetup{width=.8\linewidth}

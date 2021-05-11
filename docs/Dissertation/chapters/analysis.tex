@@ -1,4 +1,5 @@
 \chapter{Analysis}
+\label{chapter:analysis}
 The challenges involved in dealing with missing and corrupt modalities appear to be quite different. For starters, detection of a missing modality in a system is likely trivial as the data will be nonexistent, or the device missing. Corrupt data will be harder to detect as it will be presented to the model in the same way as a clean sample and these external indicators cannot be relied upon. Likewise, using ModDrop \cite{ModDrop} during training appears to make a model largely robust to missing modalities, but not necessarily on those with corruption.\\
 
 Supposing our model is robust to missing modalities, and possess a reliable method of detecting corruption, we may simply remove any corrupt modalities and allow our model to deal with the gaps. This would limit the effect of inaccurate information from that modality on the output and give the same performance as with missing modalities. However, this method would not be able to take advantage of any useful information that may remain in the corrupt modality.\\

@@ -10,6 +10,7 @@ Lipton et al. \cite{BBSD} present black box shift detection (BBSD), a method of 
 They note challenges with adapting BBSD to streaming scenarios. Accuracy increases as the number of samples considered increases, so best results would be obtained with a large window. However, this makes the estimate less fresh, limiting its utility for detecting short term shifts or anomalies in a single sample.\\
 
 \section{Modality reconstruction}
+\label{section:reconstruction}
 A Cascading Residual Autoencoder (CRA) \cite{CRA} can be used to impute data from missing modalities using those available. A Residual Autoencoder (RA) is trained to minimise the difference between a complete training sample and the same sample with corruption. Multiple RA’s are stacked, with the sum of the input and output of each RA, the current reconstruction, used as the input for the next RA. The difference between the current reconstruction and complete data reduces after each RA and deeper CRAs produce better imputations.\\
 
 CRA achieved good results on 4 datasets \cite{CRA}, outperforming all other matrix completion or autoencoder based imputation methods they test against. However, the datasets do not show much variation in modalities. For example in the HSFD dataset modalities are images of the same face taken in different spectral ranges, and in the RGB-D dataset the two modalities are RGB and Depth images of an object. It is unclear whether CRA could be effectively applied to modalities of significantly different types, such as audio, video, and caption data in movies.\\
