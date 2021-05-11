@@ -110,7 +110,7 @@ class SquareGMMNoise:
         return noise.reshape((noise.shape[0], int(np.sqrt(noise.shape[1])), int(np.sqrt(noise.shape[1]))))
 
     def add_noise(self, data, snr=1):
-        noise = torch.as_tensor(self.get_noise(data.shape[0]), dtype=torch.float)
+        noise = torch.as_tensor(self.get_noise(data.shape[0]), dtype=torch.float).reshape(data.shape)
         return (noise + snr*data)/(snr + 1)
 
 class ModGMMNoise:
