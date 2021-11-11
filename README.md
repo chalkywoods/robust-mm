@@ -8,6 +8,6 @@ corrupted samples, suggesting the output could be inaccurate, or be trained in s
 
 This project aims to maximise model performance in the presence of missing and corrupt modalities. A novel anomaly detection pipeline based on Canonical Correlation Analysis is presented, able to detect corruption in all modalities simultaneously, provided at least 2 remain clean. The pipeline is applied to a multimodal MNIST classifier, achieving accuracy increases of up to 28.1% on highly corrupted data, whilst giving no detriment to accuracy when no corruption is present.
 
-[Final Report](./docs/Dissertation/Dissertation.pdf).
+The [Final Report](./docs/Dissertation/Dissertation.pdf) got a grade of 80, and I hope to continue working on and potentially publishing it in future.
 
 Demonstration provided using the mm-fit multimodal human activity recognition dataset. Data available from the [MM-Fit website](https://mmfit.github.io/).
